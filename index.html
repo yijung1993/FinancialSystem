@@ -398,6 +398,29 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator{opacity:.6;curs
 .room-input:focus{border-color:#4A78C4}
 .sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7ACA78;margin-right:5px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* book switcher */
+.book-switcher{background:rgba(255,255,255,.22);border:1.5px solid rgba(255,255,255,.45);
+  color:white;border-radius:20px;padding:5px 13px;font-size:14px;font-weight:700;
+  cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit;
+  transition:background .15s}
+.book-switcher:active{background:rgba(255,255,255,.35)}
+/* book picker modal */
+.book-picker-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.book-picker-item{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;
+  border:2px solid var(--border);background:var(--surface);cursor:pointer;transition:border-color .15s}
+.book-picker-item.active{border-color:var(--p);background:var(--bg)}
+.book-picker-item:active{background:var(--bg)}
+.book-picker-icon{font-size:26px;width:40px;text-align:center}
+.book-picker-info{flex:1}
+.book-picker-name{font-size:16px;font-weight:700}
+.book-picker-sub{font-size:12px;color:var(--text2);margin-top:1px}
+/* book management */
+.book-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px}
+.book-badge.personal{background:#E8F4ED;color:#2D7A4F}
+.book-badge.shared{background:#E8EEF8;color:#2D4A8C}
+.book-archived-section{margin-top:18px}
+.book-archived-label{font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:8px;padding:0 4px}
 /* fab */
 .fab{position:fixed;bottom:calc(var(--nb)+var(--safe)+16px);right:18px;width:56px;height:56px;
   border-radius:50%;background:linear-gradient(135deg,var(--p3),var(--p));color:white;
@@ -565,7 +588,16 @@ let state={
   modal:null,
   editForm:{},
   sharedRoom:load('budget_room',null),
+  books:load('budget_books',null),
+  activeBook:load('budget_active_book','all'),
 };
+// 帳本初始化：若第一次執行則建立預設帳本並將舊資料歸入
+if(!state.books){
+  state.books=[{id:'default',name:'個人帳本',icon:'📒',type:'personal',currency:'TWD',isDefault:true,isArchived:false}];
+  state.txs=state.txs.map(t=>({...t,bookId:t.bookId||'default'}));
+  save('budget_books',state.books);
+  save('budget_txs',state.txs);
+}
 state.form=defaultForm();
 // 啟動時自動處理到期固定費用
 setTimeout(()=>{const n=processFixedExpenses();if(n>0)showToast(`已自動記入 ${n} 筆固定費用 ✓`);},300);
@@ -576,9 +608,26 @@ function defaultForm(){
   const accs=state?state.accounts:DEFAULT_ACCOUNTS;
   const fromId=accs[0]?.id||'cash';
   const toId=accs[1]?.id||fromId;
+  const defBookId=(state?.books||[]).find(b=>b.isDefault)?.id||'default';
   return{type:'expense',category:'food',subCategory:'',amount:'',
     date:todayStr(),note:'',accountId:fromId,installment:0,
-    fromAccountId:fromId,toAccountId:toId};
+    fromAccountId:fromId,toAccountId:toId,bookId:defBookId};
+}
+function activeTxs(){
+  const books=state.books||[];
+  if(state.activeBook==='all'){
+    const archivedIds=new Set(books.filter(b=>b.isArchived).map(b=>b.id));
+    return state.txs.filter(t=>!archivedIds.has(t.bookId));
+  }
+  return state.txs.filter(t=>t.bookId===state.activeBook);
+}
+function activeBookName(){
+  if(state.activeBook==='all')return'總帳本';
+  return(state.books||[]).find(b=>b.id===state.activeBook)?.name||'帳本';
+}
+function activeBookIcon(){
+  if(state.activeBook==='all')return'📚';
+  return(state.books||[]).find(b=>b.id===state.activeBook)?.icon||'📒';
 }
 function saveAll(){
   save('budget_txs',state.txs);
@@ -587,6 +636,8 @@ function saveAll(){
   save('budget_cats_inc',state.cats.income);
   save('budget_ef',state.emergencyFund);
   save('budget_nickname',state.nickname);
+  save('budget_books',state.books);
+  save('budget_active_book',state.activeBook);
   save('budget_df',state.dreamFund);
   save('budget_hide_bal',state.accHideBalance);
   save('budget_loans',state.loans);
@@ -729,6 +780,7 @@ function addTransfer(){
     accountId:state.form.fromAccountId,
     amount:amt,note:state.form.note.trim(),
     necessity:null,category:'transfer',subCategory:null,
+    bookId:state.form.bookId||(state.books||[]).find(b=>b.isDefault)?.id||'default',
   });
   saveAll();state.form=defaultForm();state.modal=null;showToast('轉帳已記錄 ✓');renderApp();
 }
@@ -755,6 +807,7 @@ function addTx(){
         amount:monthAmt,
         note:baseNote?`${baseNote} · 分${n}期第${i+1}期`:`分${n}期第${i+1}期`,
         accountId:state.form.accountId,
+        bookId:state.form.bookId||(state.books||[]).find(b=>b.isDefault)?.id||'default',
       });
     }
     saveAll();state.form=defaultForm();state.modal=null;showToast(`已拆為 ${n} 筆分期記錄 ✓`);renderApp();
@@ -764,6 +817,7 @@ function addTx(){
       date:state.form.date,type:state.form.type,necessity:null,
       category:state.form.category,subCategory:state.form.subCategory||null,
       amount:amt,note:state.form.note.trim(),accountId:state.form.accountId,
+      bookId:state.form.bookId||(state.books||[]).find(b=>b.isDefault)?.id||'default',
     });
     saveAll();state.form=defaultForm();state.modal=null;showToast('已儲存 ✓');renderApp();
   }
@@ -1242,6 +1296,8 @@ function renderModal(){
   if(type==='editMember')return renderEditMemberModal();
   if(type==='editIns')return renderEditInsModal();
   if(type==='viewPDF')return renderViewPdfModal();
+  if(type==='bookPicker')return renderBookPickerModal();
+  if(type==='editBook')return renderEditBookModal();
   return'';
 }
 function renderView(){
@@ -1273,7 +1329,8 @@ function creditCardReminders(){
 // ── RENDER: HOME ───────────────────────────────────────────────────────────
 function renderHomeView(){
   const n=new Date();
-  const sum=calcSum(monthTxs(n.getFullYear(),n.getMonth()));
+  const txs=activeTxs();
+  const sum=calcSum(txs.filter(t=>{const d=new Date(t.date);return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth();}));
 
   // Emergency fund
   const ef=state.emergencyFund;
@@ -1291,7 +1348,7 @@ function renderHomeView(){
   // Day navigation
   const dayStr=offsetDate(state.homeDayOffset);
   const dayD=new Date(dayStr+'T00:00:00');
-  const dayTxs=state.txs.filter(t=>t.date===dayStr);
+  const dayTxs=txs.filter(t=>t.date===dayStr);
   const dayLabel=state.homeDayOffset===0?'今天':state.homeDayOffset===-1?'昨天':`${dayD.getMonth()+1}/${dayD.getDate()}`;
 
   const efCard=`<div class="card ef-card">
@@ -1335,6 +1392,9 @@ function renderHomeView(){
   const dayI=dayTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
 
   return`<div class="hdr"><div class="hdr-in">
+    <div style="margin-bottom:8px">
+      <button class="book-switcher" data-a="openBookPicker">${activeBookIcon()} ${activeBookName()} ▾</button>
+    </div>
     <h1>${n.getFullYear()}年${n.getMonth()+1}月</h1>
     <div class="sum-bar">
       <div class="sum-item"><div class="lbl">本月收入</div><div class="val">$${fmt(sum.income)}</div></div>
@@ -1455,6 +1515,11 @@ function renderAddModal(){
       <div class="form-field"><label>備註</label>
         <input class="form-input" id="fnote" type="text" placeholder="選填" value="${f.note}"></div>
     </div>
+    ${(state.books||[]).filter(b=>!b.isArchived).length>1?`
+    <div class="slabel">帳本</div>
+    <div class="acc-row" style="margin-bottom:14px">${(state.books||[]).filter(b=>!b.isArchived).map(b=>
+      `<button class="acc-pill${f.bookId===b.id?' active':''}" style="--acc-c:var(--latte)" data-a="setFormBook" data-v="${b.id}">${b.icon} ${b.name}</button>`
+    ).join('')}</div>`:''}
     <button class="save-btn" data-a="save">儲存記錄</button>
   </div></div>`;
 }
@@ -1830,7 +1895,7 @@ function renderHistView(){
   const filters=[{id:'all',lbl:'全部'},{id:'expense',lbl:'支出'},{id:'income',lbl:'收入'},
     {id:'transfer',lbl:'🔄 轉帳'},{id:'必要',lbl:'必要'},{id:'想要',lbl:'想要'},
     ...state.accounts.map(a=>({id:'acc:'+a.id,lbl:a.icon+a.name}))];
-  let list=[...state.txs];
+  let list=[...activeTxs()];
   if(period==='month'){list=list.filter(t=>{const d=new Date(t.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();});}
   else if(period==='prev'){let pm=now.getMonth()-1,py=now.getFullYear();if(pm<0){pm=11;py--;}list=list.filter(t=>{const d=new Date(t.date);return d.getFullYear()===py&&d.getMonth()===pm;});}
   else if(period==='3m'){const cut=new Date();cut.setMonth(cut.getMonth()-3);list=list.filter(t=>new Date(t.date+'T00:00:00')>=cut);}
@@ -1977,6 +2042,7 @@ function renderSettingsView(){
   }
 
   if(state.settingsTab==='shared')return renderSharedView();
+  if(state.settingsTab==='books')return renderBooksView();
 
   const sectionLabels={currency:'幣別管理',export:'匯出資料',password:'密碼鎖定',reset:'重設記帳',language:'語言設定',guide:'使用說明',theme:'主題風格'};
   if(sectionLabels[state.settingsTab]){
@@ -1995,6 +2061,7 @@ function renderSettingsView(){
 
   // Main menu
   const menuItems=[
+    {id:'books',ico:'📚',name:'帳本管理',sub:`${(state.books||[]).filter(b=>!b.isArchived).length} 個帳本・點此新增或管理`},
     {id:'shared',ico:'👥',name:'共同帳本',sub:state.sharedRoom?`✓ 已連線・房間碼 ${state.sharedRoom}`:'點此開始共同記帳'},
     {id:'categories',ico:'🏷️',name:'類別管理',sub:'支出 / 收入類別'},
     {id:'fixed',ico:'📋',name:'固定費用',sub:'月費、訂閱、房租'},
@@ -2028,6 +2095,104 @@ function renderSettingsView(){
     </div>`).join('')}
     </div>
   </div>`;
+}
+
+// ── RENDER: BOOKS ──────────────────────────────────────────────────────────
+function renderBooksView(){
+  const books=state.books||[];
+  const active=books.filter(b=>!b.isArchived);
+  const archived=books.filter(b=>b.isArchived);
+  function bookRow(b){
+    const typeLbl=b.type==='shared'?'共同':'個人';
+    const typeClass=b.type==='shared'?'shared':'personal';
+    return`<div class="setting-row">
+      <div class="setting-ico" style="background:var(--bg);border:1px solid var(--border);font-size:24px">${b.icon}</div>
+      <div class="setting-info">
+        <div class="setting-name">${b.name}${b.isDefault?'<span class="book-badge personal">預設</span>':''}<span class="book-badge ${typeClass}">${typeLbl}</span></div>
+        <div class="setting-sub">${b.currency||'TWD'}${b.isArchived?' · 已封存':''}</div>
+      </div>
+      <div class="setting-actions">
+        <button class="icon-btn edit" data-a="editBook" data-v="${b.id}">✏️</button>
+        ${!b.isArchived?`<button class="icon-btn" data-a="archiveBook" data-v="${b.id}" title="封存">📦</button>`:`<button class="icon-btn" data-a="unarchiveBook" data-v="${b.id}" title="取消封存">📂</button>`}
+        ${!b.isDefault?`<button class="icon-btn del" data-a="delBook" data-v="${b.id}">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }
+  return`<div class="hdr"><div class="hdr-in">
+    <div class="hdr-row">
+      <div><h1>帳本管理</h1></div>
+      <button class="cal-nb" data-a="stab" data-v="main">←</button>
+    </div>
+  </div></div>
+  <div class="content">
+    <div class="card">${active.map(bookRow).join('')}
+      <button class="add-fab" data-a="newBook">＋ 新增帳本</button>
+    </div>
+    ${archived.length>0?`<div class="book-archived-section">
+      <div class="book-archived-label">封存的帳本</div>
+      <div class="card">${archived.map(bookRow).join('')}</div>
+    </div>`:''}
+  </div>`;
+}
+function renderBookPickerModal(){
+  const books=(state.books||[]).filter(b=>!b.isArchived);
+  const cur=state.activeBook;
+  function countTxs(bookId){
+    const n=new Date();
+    return state.txs.filter(t=>{
+      if(bookId!=='all'&&t.bookId!==bookId)return false;
+      const d=new Date(t.date);return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth();
+    }).length;
+  }
+  const allItem=`<div class="book-picker-item${cur==='all'?' active':''}" data-a="switchBook" data-v="all">
+    <div class="book-picker-icon">📚</div>
+    <div class="book-picker-info">
+      <div class="book-picker-name">總帳本</div>
+      <div class="book-picker-sub">顯示所有帳本的記錄・本月 ${countTxs('all')} 筆</div>
+    </div>
+    ${cur==='all'?'<span style="color:var(--p);font-size:20px">✓</span>':''}
+  </div>`;
+  const bookItems=books.map(b=>`<div class="book-picker-item${cur===b.id?' active':''}" data-a="switchBook" data-v="${b.id}">
+    <div class="book-picker-icon">${b.icon}</div>
+    <div class="book-picker-info">
+      <div class="book-picker-name">${b.name}</div>
+      <div class="book-picker-sub">${b.type==='shared'?'共同帳本':'個人帳本'} · ${b.currency||'TWD'} · 本月 ${countTxs(b.id)} 筆</div>
+    </div>
+    ${cur===b.id?'<span style="color:var(--p);font-size:20px">✓</span>':''}
+  </div>`).join('');
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">選擇帳本</div>
+    <div class="book-picker-list">${allItem}${bookItems}</div>
+    <button class="outline-btn" data-a="closeModal">取消</button>
+  </div></div>`;
+}
+function renderEditBookModal(){
+  const f=state.editForm;
+  const BOOK_ICONS=['📒','📓','📔','📕','📗','📘','📙','💼','🏠','✈️','🍱','💑','🎯','💰','🏋️'];
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${f.id?'編輯帳本':'新增帳本'}</div>
+    <div class="form-field" style="margin-bottom:14px"><label>帳本名稱</label>
+      <input class="form-input" id="bk-name" type="text" placeholder="例：家用帳本" value="${f.name||''}"></div>
+    <div class="slabel">圖示</div>
+    <div class="acc-row" style="flex-wrap:wrap;margin-bottom:14px">${BOOK_ICONS.map(ic=>
+      `<button class="acc-pill${(f.icon||'📒')===ic?' active':''}" style="--acc-c:var(--latte);font-size:20px;padding:8px 10px" data-a="pickBookIcon" data-v="${ic}">${ic}</button>`
+    ).join('')}</div>
+    <div class="slabel">帳本類型</div>
+    <div class="type-chips" style="margin-bottom:14px">
+      <button class="type-chip${(f.type||'personal')==='personal'?' active':''}" data-a="setBookType" data-v="personal">👤 個人帳本</button>
+      <button class="type-chip${(f.type||'personal')==='shared'?' active':''}" data-a="setBookType" data-v="shared">👥 共同帳本</button>
+    </div>
+    <div class="slabel">幣別</div>
+    <div class="acc-row" style="margin-bottom:14px">
+      ${['TWD','USD','JPY','EUR','HKD'].map(c=>
+        `<button class="acc-pill${(f.currency||'TWD')===c?' active':''}" style="--acc-c:var(--latte)" data-a="setBookCurrency" data-v="${c}">${c}</button>`
+      ).join('')}
+    </div>
+    <button class="save-btn" data-a="saveBook">儲存</button>
+    <button class="outline-btn" style="margin-top:8px" data-a="closeModal">取消</button>
+  </div></div>`;
 }
 
 // ── RENDER: SETTINGS MODALS ────────────────────────────────────────────────
@@ -2839,6 +3004,53 @@ document.addEventListener('click',e=>{
       if(g)g.style.display='none';
       break;}
     case'stab':state.settingsTab=v;renderApp();break;
+    case'openBookPicker':state.modal={type:'bookPicker'};renderApp();break;
+    case'switchBook':state.activeBook=v;save('budget_active_book',v);state.modal=null;renderApp();break;
+    case'setFormBook':state.form.bookId=v;dmActive('[data-a="setFormBook"]',v);break;
+    case'newBook':
+      state.editForm={icon:'📒',type:'personal',currency:'TWD',name:''};
+      state.modal={type:'editBook'};renderApp();break;
+    case'editBook':{
+      const bk=(state.books||[]).find(b=>b.id===v);
+      if(bk)state.editForm={...bk};
+      state.modal={type:'editBook'};renderApp();break;}
+    case'saveBook':{
+      const nEl=document.getElementById('bk-name');
+      if(nEl)state.editForm.name=nEl.value.trim();
+      if(!state.editForm.name){showToast('請輸入帳本名稱');break;}
+      if(state.editForm.id){
+        const idx=(state.books||[]).findIndex(b=>b.id===state.editForm.id);
+        if(idx>=0)state.books[idx]={...state.books[idx],...state.editForm};
+      }else{
+        const newBook={
+          id:'bk'+Date.now(),name:state.editForm.name,icon:state.editForm.icon||'📒',
+          type:state.editForm.type||'personal',currency:state.editForm.currency||'TWD',
+          isDefault:false,isArchived:false
+        };
+        state.books=[...(state.books||[]),newBook];
+      }
+      saveAll();state.modal=null;showToast('帳本已儲存 ✓');renderApp();break;}
+    case'delBook':{
+      const bk=(state.books||[]).find(b=>b.id===v);
+      if(!bk||bk.isDefault){showToast('預設帳本無法刪除');break;}
+      if(!confirm(`確定刪除「${bk.name}」？此帳本的記錄也會一併刪除。`))break;
+      state.txs=state.txs.filter(t=>t.bookId!==v);
+      state.books=(state.books||[]).filter(b=>b.id!==v);
+      if(state.activeBook===v)state.activeBook='all';
+      saveAll();showToast('帳本已刪除');renderApp();break;}
+    case'archiveBook':{
+      const idx=(state.books||[]).findIndex(b=>b.id===v);
+      if(idx>=0){state.books[idx].isArchived=true;}
+      if(state.activeBook===v)state.activeBook='all';
+      saveAll();showToast('帳本已封存');renderApp();break;}
+    case'unarchiveBook':{
+      const idx=(state.books||[]).findIndex(b=>b.id===v);
+      if(idx>=0){state.books[idx].isArchived=false;}
+      saveAll();showToast('已取消封存');renderApp();break;}
+    case'pickBookIcon':state.editForm.icon=v;dmActive('[data-a="pickBookIcon"]',v);
+      (()=>{const b=document.getElementById('bk-name');if(b)b.focus();})();break;
+    case'setBookType':state.editForm.type=v;renderModalOnly();break;
+    case'setBookCurrency':state.editForm.currency=v;dmActive('[data-a="setBookCurrency"]',v);break;
     case'setCatType':state.catTypeTab=v;renderApp();break;
     case'newAcc':
       state.editForm={type:'bank',icon:'🏦',color:ACC_COLORS[1],init:0,name:''};
