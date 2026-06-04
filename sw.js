@@ -1,4 +1,4 @@
-const CACHE = 'budget-v5';
+const CACHE = 'budget-v6';
 const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png',
   './icons/home.png','./icons/calendar.png','./icons/assets.png','./icons/stats.png',
   './icons/history.png','./icons/insurance.png','./icons/settings.png'];
