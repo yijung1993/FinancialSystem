@@ -65,7 +65,7 @@ body{font-family:var(--font-family);
 .sum-item .val{font-size:24px;font-weight:800;margin-top:2px}
 
 /* content & card */
-.content{padding:14px}
+.content{padding:14px 14px calc(var(--nb)+var(--safe)+20px)}
 .card{background:var(--surface);border-radius:var(--r);padding:16px;margin-bottom:12px;
   border:1px solid rgba(240,217,192,.7);box-shadow:0 2px 10px var(--shadow)}
 .card-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;
@@ -337,7 +337,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator{opacity:.6;curs
   transition:color .18s;font-family:inherit}
 .nav-btn.active{color:var(--p)}
 .nav-ico{font-size:24px;line-height:1}
-.nav-lbl{font-size:18px;font-weight:700}
+.nav-lbl{font-size:12px;font-weight:700}
 
 /* misc */
 .empty{text-align:center;padding:50px 20px;color:var(--text2)}
@@ -487,12 +487,12 @@ body[data-font="dandan"] .hdr h1{font-size:25px}
   .fab{right:max(18px,calc((100vw - 440px) / 2 + 18px))}
 }
 @media(max-width:480px){
-  body{font-size:14px}
+  body,.form-input,.acc-pill,.subcat-btn,.type-btn,.save-btn,
+  .modal-title,.setting-name,.setting-sub,.card-title,
+  .sum-item .lbl,.stab,.slabel,.nav-lbl{font-size:14px}
+  .cat-btn{font-size:12px}
   .amt-input{font-size:28px}
-  .form-input{font-size:14px}
-  .acc-pill,.subcat-btn{font-size:12px}
-  .cat-btn{font-size:10px}
-  .modal-title{font-size:17px}
+  .amt-pre{font-size:22px}
   .form-row{flex-direction:column;gap:6px}
   .form-field{width:100%}
   .modal{max-height:78vh!important}
@@ -1619,12 +1619,10 @@ function renderAddModal(){
           style="--acc-c:${acc.color};${acc.id===f.fromAccountId?'opacity:.4;pointer-events:none':''}"
           data-a="setToAcc" data-v="${acc.id}">${acc.icon} ${acc.name}</button>`
       ).join('')}</div>
-      <div class="form-row">
-        <div class="form-field"><label>日期</label>
-          <input class="form-input" id="fdate" type="date" value="${f.date}"></div>
-        <div class="form-field"><label>備註</label>
-          <input class="form-input" id="fnote" type="text" placeholder="選填" value="${f.note}"></div>
-      </div>
+      <div class="form-field" style="margin-bottom:10px"><label>日期</label>
+        <input class="form-input" id="fdate" type="date" value="${f.date}"></div>
+      <div class="form-field" style="margin-bottom:14px"><label>備註</label>
+        <input class="form-input" id="fnote" type="text" placeholder="選填" value="${f.note}"></div>
       <button class="save-btn" data-a="save">儲存轉帳</button>
     </div></div>`;
   }
@@ -1675,12 +1673,10 @@ function renderAddModal(){
     ${(f.installment||0)>=2&&f.amount?`<div style="font-size:12px;color:var(--text2);background:var(--bg);padding:8px 12px;border-radius:8px;margin-bottom:14px;line-height:1.7">
       共 ${f.installment} 筆 · 首期 <b>$${(parseFloat(f.amount)-Math.floor(parseFloat(f.amount)/f.installment)*(f.installment-1)).toLocaleString('zh-TW')}</b> · 之後每月 <b>$${Math.floor(parseFloat(f.amount)/f.installment).toLocaleString('zh-TW')}</b>
     </div>`:''}`:''}
-    <div class="form-row">
-      <div class="form-field"><label>日期</label>
-        <input class="form-input" id="fdate" type="date" value="${f.date}"></div>
-      <div class="form-field"><label>備註</label>
-        <input class="form-input" id="fnote" type="text" placeholder="選填" value="${f.note}"></div>
-    </div>
+    <div class="form-field" style="margin-bottom:10px"><label>日期</label>
+      <input class="form-input" id="fdate" type="date" value="${f.date}"></div>
+    <div class="form-field" style="margin-bottom:14px"><label>備註</label>
+      <input class="form-input" id="fnote" type="text" placeholder="選填" value="${f.note}"></div>
     ${(state.books||[]).filter(b=>!b.isArchived).length>1?`
     <div class="slabel">帳本</div>
     <div class="acc-row" style="margin-bottom:14px">${(state.books||[]).filter(b=>!b.isArchived).map(b=>
