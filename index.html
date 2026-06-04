@@ -480,6 +480,16 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator{opacity:.6;curs
   .modal-handle{display:none}
   .fab{right:max(18px,calc((100vw - 440px) / 2 + 18px))}
 }
+@media(max-width:480px){
+  body{font-size:14px}
+  .amt-input{font-size:28px}
+  .form-input{font-size:14px}
+  .acc-pill,.subcat-btn{font-size:12px}
+  .cat-btn{font-size:10px}
+  .modal-title{font-size:17px}
+  .form-row{flex-direction:column;gap:6px}
+  .modal{max-height:78vh!important}
+}
   </style>
 </head>
 <body>
@@ -1578,8 +1588,11 @@ function renderAddModal(){
       <button class="type-btn${f.type==='transfer'?' at':''}" data-a="type" data-v="transfer">🔄 轉帳</button>
     </div>`;
   if(f.type==='transfer'){
-    return`<div class="overlay" id="modal-overlay"><div class="modal" style="max-height:90vh">
-      <div class="modal-handle"></div>
+    return`<div class="overlay" id="modal-overlay"><div class="modal" style="max-height:80vh">
+      <div style="display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:14px">
+        <div style="width:36px;height:4px;background:var(--border);border-radius:2px"></div>
+        <button data-a="closeModal" style="position:absolute;right:0;border:none;background:transparent;font-size:22px;cursor:pointer;color:var(--text2);line-height:1;padding:0 4px">✕</button>
+      </div>
       ${typeToggle}
       <div class="amt-wrap">
         <span class="amt-pre">$</span>
@@ -1612,8 +1625,11 @@ function renderAddModal(){
   const subcats=selCat?.subcats||[];
   const selAcc=state.accounts.find(a=>a.id===f.accountId);
   const isCredit=selAcc?.type==='credit';
-  return`<div class="overlay" id="modal-overlay"><div class="modal" style="max-height:90vh">
-    <div class="modal-handle"></div>
+  return`<div class="overlay" id="modal-overlay"><div class="modal" style="max-height:80vh">
+    <div style="display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:14px">
+      <div style="width:36px;height:4px;background:var(--border);border-radius:2px"></div>
+      <button data-a="closeModal" style="position:absolute;right:0;border:none;background:transparent;font-size:22px;cursor:pointer;color:var(--text2);line-height:1;padding:0 4px">✕</button>
+    </div>
     ${typeToggle}
     <div class="amt-wrap">
       <span class="amt-pre">$</span>
