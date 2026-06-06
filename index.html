@@ -21,6 +21,10 @@
 @font-face{font-family:'LiXian';src:url('font/grain.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap}
 @font-face{font-family:'CuXian';src:url('font/bold.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap}
 @font-face{font-family:'DanDanFree';src:url('font/egg.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'ZenMaruGothic';src:url('font/ZenMaruGothic-Bold.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'MgenPlus1c';src:url('font/rounded-l-mgenplus-1c-medium.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'KanakaFont';src:url('font/073 TEGUSE - Kanaka Font_240904.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'MarukoGothic';src:url('font/MarukoGothicCJKjp-Black.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --p:#C8A5A3;--p2:#D0B0B1;--p3:#C59390;
@@ -487,21 +491,43 @@ body[data-font="dandan"] .hdr h1{font-size:25px}
   .fab{right:max(18px,calc((100vw - 440px) / 2 + 18px))}
 }
 @media(max-width:430px){
-  /* 全站統一 14px */
+  /* 全站內文統一 14px */
   body{font-size:14px}
-  .form-input,.acc-pill,.subcat-btn,.type-btn,.save-btn,
-  .setting-name,.setting-sub,.card-title,.stab,.slabel{font-size:14px}
-  .cat-btn{font-size:12px}
-  /* 金額區塊縮小但仍保持突出 */
-  .amt-input{font-size:28px}
-  .amt-pre{font-size:20px}
-  .hdr h1{font-size:24px}
-  .sum-item .val{font-size:20px}
+  .form-input,.acc-pill,.subcat-btn,.type-btn,.save-btn,.outline-btn,
+  .chip,.type-chip,.nec-btn,.add-fab,.sm-btn,.del-btn,
+  .setting-name,.setting-sub,.card-title,.stab,.slabel,
+  .tx-cat,.tx-meta,.tx-amt,
+  .ef-hint,.empty p,.nick-inp,.stats-sel,
+  .book-picker-name,.day-hdr,
+  .ins-cov-toggle,.ins-cov-row,.ins-detail-btn,.ins-drag-handle{font-size:14px}
+  /* 次要標籤 12px */
+  .cat-btn,.hdr .sub,.nav-lbl,.wday,.cdn,.nec-tag,.acc-tag,
+  .book-picker-sub,.book-archived-label,.budget-note,
+  .ins-group-hdr,.ins-badge,.ins-st,.ins-total-item .il{font-size:12px}
+  /* 彈窗標題 */
+  .modal-title{font-size:17px}
+  /* 頁面主標題 */
+  .hdr h1{font-size:22px}
+  /* 數值類（保持突出但縮小） */
+  .amt-input{font-size:24px}
+  .amt-pre{font-size:18px}
+  .sum-item .val{font-size:18px}
+  .sum-item .lbl{font-size:13px}
+  .sum-metric .mv{font-size:17px}
+  .ins-total-item .iv{font-size:17px}
+  .ef-bal{font-size:28px}
+  .cda{font-size:16px}
+  /* 日曆標題 */
+  .cal-title-text{font-size:16px}
+  /* 導覽列 */
+  .nav-ico{font-size:22px}
+  /* 空白頁示意圖 */
+  .empty .ei{font-size:40px}
+  /* 暱稱卡片 */
+  .nick-avatar{width:52px;height:52px;font-size:24px}
+  .nick-block{padding:14px;gap:12px}
   /* 頭部與內文間距 */
   .content{padding-top:20px;padding-bottom:110px}
-  /* 暱稱卡片明確保留大小 */
-  .nick-avatar{width:52px;height:52px;font-size:26px}
-  .nick-block{padding:14px;gap:12px}
   /* 日期欄位防溢出 */
   .form-row{flex-direction:column;gap:6px}
   .form-field{width:100%;max-width:100%}
@@ -509,8 +535,8 @@ body[data-font="dandan"] .hdr h1{font-size:25px}
   /* 彈窗 */
   .modal{max-height:78vh!important}
   /* 蛋蛋體額外縮小 */
-  body[data-font="dandan"] .amt-input{font-size:22px}
-  body[data-font="dandan"] .amt-pre{font-size:16px}
+  body[data-font="dandan"] .amt-input{font-size:20px}
+  body[data-font="dandan"] .amt-pre{font-size:15px}
 }
   </style>
 </head>
@@ -679,6 +705,10 @@ const FONTS={
   lixian:{name:'粒線體',family:"'LiXian',-apple-system,'PingFang TC','Microsoft JhengHei UI',sans-serif"},
   cuxian:{name:'粗線體',family:"'CuXian',-apple-system,'PingFang TC','Microsoft JhengHei UI',sans-serif"},
   dandan:{name:'蛋蛋自由體',family:"'DanDanFree',-apple-system,'PingFang TC','Microsoft JhengHei UI',sans-serif"},
+  zenmaru:{name:'Zen 圓體',family:"'ZenMaruGothic',-apple-system,'PingFang TC','Microsoft JhengHei UI',sans-serif"},
+  mgen1c:{name:'Rounded Mgen+體',family:"'MgenPlus1c',-apple-system,'PingFang TC','Microsoft JhengHei UI',sans-serif"},
+  kanaka:{name:'鹿仲茉菜手寫',family:"'KanakaFont',-apple-system,'PingFang TC','Microsoft JhengHei UI',sans-serif"},
+  maruko:{name:'馬路口圓體',family:"'MarukoGothic',-apple-system,'PingFang TC','Microsoft JhengHei UI',sans-serif"},
   system:{name:'系統預設字型',family:"-apple-system,'PingFang TC','Microsoft JhengHei UI','Helvetica Neue',sans-serif"},
 };
 function applyAppTheme(){
@@ -3017,11 +3047,14 @@ function renderInsView(){
     ...state.insMembers.map(m=>({name:m.name,icon:m.icon,id:m.id})),
     ...detectedExtra.map(n=>({name:n,icon:'👤',id:null})),
   ];
-  const personChips=`<div class="chips" style="margin-bottom:6px">
-    <button class="chip${state.insPersonFilter==='all'?' ac':''}" data-a="insPersonFilt" data-v="all">👨‍👩‍👧 全家</button>
-    ${allMembers.map(m=>`<button class="chip${state.insPersonFilter===m.name?' ac':''}" data-a="insPersonFilt" data-v="${m.name}">${m.icon} ${m.name}${m.id?`<span data-a="editMember" data-v="${m.id}" style="margin-left:4px;opacity:.6;font-size:10px"> ···</span>`:`<span data-a="addDetectedMember" data-v="${m.name}" style="margin-left:4px;opacity:.6;font-size:10px"> ···</span>`}</button>`).join('')}
-    <button class="chip" data-a="newMember" style="border-style:dashed;color:var(--text2)">＋ 新增</button>
-  </div>`;;
+  const personChips=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+    <div class="chips" style="flex:1;margin-bottom:0;flex-wrap:wrap">
+      <button class="chip${state.insPersonFilter==='all'?' ac':''}" data-a="insPersonFilt" data-v="all">👨‍👩‍👧 全家</button>
+      ${allMembers.map(m=>`<button class="chip${state.insPersonFilter===m.name?' ac':''}" data-a="insPersonFilt" data-v="${m.name}">${m.icon} ${m.name}${m.id?`<span data-a="editMember" data-v="${m.id}" style="margin-left:4px;opacity:.6;font-size:10px"> ···</span>`:`<span data-a="addDetectedMember" data-v="${m.name}" style="margin-left:4px;opacity:.6;font-size:10px"> ···</span>`}</button>`).join('')}
+      <button class="chip" data-a="newMember" style="border-style:dashed;color:var(--text2)">＋ 新增</button>
+    </div>
+    <button class="save-btn" data-a="newIns" style="flex-shrink:0;padding:7px 14px;font-size:18px;line-height:1;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;margin-bottom:0">＋</button>
+  </div>`;
   const chips=`<div class="chips">${['all',...INS_TYPES].map(t=>
     `<button class="chip${state.insFilter===t?' ac':''}" data-a="insFilt" data-v="${t}">${t==='all'?'全部':t}</button>`
   ).join('')}</div>`;
@@ -3054,8 +3087,7 @@ function renderInsView(){
   if(!filtered.length)cards=`<div class="empty"><div class="ei">🛡️</div><p>尚未新增保單<br><span style="font-size:13px">點下方 + 新增</span></p></div>`;
 
   return hdr+alertHtml+`<div class="content" style="padding-top:12px">${personChips}${chips}${companyChips}${cards}</div>`+
-    `<input type="file" id="ins-import-input" accept=".xlsx,.xls" style="display:none">`+
-    `<button class="fab" data-a="newIns">＋</button>`;
+    `<input type="file" id="ins-import-input" accept=".xlsx,.xls" style="display:none">`;
 }
 
 function renderEditMemberModal(){
