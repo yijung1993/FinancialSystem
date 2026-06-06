@@ -1516,7 +1516,7 @@ function renderHomeView(){
 
   const efCard=`<div class="card ef-card">
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-      <div style="font-size:22px;font-weight:900;color:#7A4848;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">緊急預備金</div>
+      <div style="font-size:clamp(16px,4.5vw,22px);font-weight:900;color:#7A4848;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">緊急預備金</div>
       <button class="icon-btn edit" data-a="editEF" style="flex-shrink:0">···</button>
     </div>
     <div class="ef-bal" style="color:${(efBal||0)>=0?'var(--income)':'var(--expense)'}">$${fmt(efBal||0)}</div>
@@ -1534,8 +1534,8 @@ function renderHomeView(){
   const dfCard=`<div class="card" style="background:linear-gradient(135deg,#FBF4F3,#F5ECEA);border-color:#E0CECC">
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0">
-        <div style="font-size:22px;font-weight:900;color:#7A4848;white-space:nowrap">夢想基金</div>
-        ${df.wish?`<span style="font-size:22px;font-weight:700;color:#8B1A1A;background:rgba(139,26,26,0.1);padding:2px 12px;border-radius:8px;white-space:nowrap">${df.wish}</span>`:''}
+        <div style="font-size:clamp(16px,4.5vw,22px);font-weight:900;color:#7A4848;white-space:nowrap">夢想基金</div>
+        ${df.wish?`<span style="font-size:clamp(14px,4vw,22px);font-weight:700;color:#8B1A1A;background:rgba(139,26,26,0.1);padding:2px 12px;border-radius:8px;white-space:nowrap">${df.wish}</span>`:''}
       </div>
       <button class="icon-btn edit" data-a="editDF" style="flex-shrink:0">···</button>
     </div>
@@ -1557,7 +1557,7 @@ function renderHomeView(){
   return`<div class="hdr"><div class="hdr-in">
     <div style="display:flex;align-items:center;margin-bottom:6px">
       <button class="book-switcher" data-a="openBookPicker">${activeBookIcon()} ${activeBookName()} ▾</button>
-      <h1 style="flex:1;text-align:center;font-size:30px;font-weight:800;letter-spacing:-.3px">${n.getFullYear()}年${n.getMonth()+1}月</h1>
+      <h1 style="flex:1;text-align:center;font-size:clamp(18px,5.5vw,30px);font-weight:800;letter-spacing:-.3px">${n.getFullYear()}年${n.getMonth()+1}月</h1>
       <div style="width:auto;visibility:hidden;padding:5px 13px;font-size:14px">${activeBookName()} ▾</div>
     </div>
     <div class="sum-bar">
