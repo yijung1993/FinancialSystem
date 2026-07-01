@@ -609,7 +609,7 @@ function renderCalView(){
   return`<div class="hdr"><div class="hdr-in">
     <div class="cal-nav">
       <button class="cal-nb" data-a="cprev">‹</button>
-      <span class="cal-title-text" style="flex:1;text-align:center">${y}年 ${MONTHS[m]}</span>
+      <span class="cal-title-text" style="flex:1;text-align:center">${y}年${MONTHS[m]}</span>
       <button class="cal-nb" data-a="cnext">›</button>
     </div>
     <div class="sum-bar">
