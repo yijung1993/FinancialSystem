@@ -16,6 +16,8 @@ function attachInputs(){
   bind('df-wish',v=>{state.editForm.wish=v});
   bind('df-target',v=>{state.editForm.target=v});
   bind('ef-subname',v=>{state.editForm.newSubName=v});
+  const histAccSel=document.getElementById('hist-acc-sel');
+  if(histAccSel)histAccSel.addEventListener('change',e=>{state.histAccFilter=e.target.value;renderApp();});
   const statsSel=document.getElementById('stats-month-sel');
   if(statsSel)statsSel.addEventListener('change',e=>{
     const[sy,sm]=e.target.value.split('-').map(Number);state.statsMonth={y:sy,m:sm};renderApp();});
@@ -133,7 +135,7 @@ function bindOverlay(){
 
 document.addEventListener('click',e=>{
   const navEl=e.target.closest('[data-nav]');
-  if(navEl){const nv=navEl.dataset.nav;if(nv==='settings')state.settingsTab='main';state.view=nv;state.modal=null;renderApp();return;}
+  if(navEl){const nv=navEl.dataset.nav;if(nv==='settings')state.settingsTab='main';state.view=nv;state.modal=null;window.scrollTo(0,0);renderApp();return;}
   const el=e.target.closest('[data-a]');if(!el)return;
   const a=el.dataset.a,v=el.dataset.v;
   switch(a){
@@ -203,6 +205,11 @@ document.addEventListener('click',e=>{
     case'openSum':state.modal={type:'sum',data:{...state.statsMonth}};renderApp();break;
     case'filt':state.histFilter=v;renderApp();break;
     case'histPeriod':state.histPeriod=v;renderApp();break;
+    case'histSearch':{
+      state.histFrom=document.getElementById('hist-from')?.value||'';
+      state.histTo=document.getElementById('hist-to')?.value||'';
+      renderApp();break;
+    }
     case'toggleEmojiPicker':{
       const g=document.getElementById('emoji-picker-grid');
       if(g){if(g.style.display==='none'){g.style.display='flex';g.dataset.field=el.dataset.field||'icon';}

@@ -18,11 +18,24 @@ function dmActive(sel,v){document.querySelectorAll(sel).forEach(b=>b.classList.t
 function dmSel(sel,v,cls='sel'){document.querySelectorAll(sel).forEach(b=>b.classList.toggle(cls,b.dataset.v===v));}
 function renderApp(){
   document.getElementById('app').innerHTML=
-    renderTopBar()+renderView()+(state.modal?renderModal():'')+renderBottomNav()+
-    '';
+    renderTopBar()+renderView()+(state.modal?renderModal():'')+renderBottomNav();
   attachInputs();bindOverlay();
   if(state.view==='stats'&&state.statsView==='month'){setTimeout(()=>drawDonut(),50);setTimeout(()=>drawCatPie(),50);}
   if(state.view==='calendar')setTimeout(()=>drawDonut('cal-donut',state.calMonth.y,state.calMonth.m),50);
+}
+function renderSidebar(){
+  const tabs=[{id:'add',img:'home',lbl:'首頁'},{id:'calendar',img:'calendar',lbl:'行事曆'},
+    {id:'assets',img:'assets',lbl:'資產'},{id:'stats',img:'stats',lbl:'統計'},
+    {id:'settings',img:'settings',lbl:'設定'}];
+  const activeView=(['history'].includes(state.view)?'stats':['insurance'].includes(state.view)?'assets':state.view);
+  return`<aside class="sidebar">
+    <nav class="snb">${tabs.map(t=>
+      `<button class="snb-btn${activeView===t.id?' active':''}" data-nav="${t.id}">
+        <span class="snb-ico"><img src="icons/${t.img}.png" width="22" height="22"></span>
+        <span class="snb-lbl">${t.lbl}</span>
+      </button>`
+    ).join('')}</nav>
+  </aside>`;
 }
 function renderTopBar(){
   const tabs=[{id:'add',img:'home',lbl:'首頁'},{id:'calendar',img:'calendar',lbl:'行事曆'},
@@ -164,7 +177,7 @@ function renderHomeView(){
     <div class="ef-hint" style="margin-top:4px">${efAcc?`${efAcc.icon} ${escHtml(efAcc.name)}`:'尚未連結帳戶'}</div>
   </div>`;
 
-  const dfCard=`<div class="card" style="background:linear-gradient(135deg,#FBF4F3,#F5ECEA);border-color:#E0CECC">
+  const dfCard=`<div class="card" style="background:var(--surface);border-color:var(--border)">
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0">
         <div style="font-size:clamp(16px,4.5vw,22px);font-weight:900;color:#7A4848;white-space:nowrap">夢想基金</div>
@@ -188,10 +201,9 @@ function renderHomeView(){
   const dayI=dayTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
 
   return`<div class="hdr"><div class="hdr-in">
-    <div style="display:flex;align-items:center;margin-bottom:6px">
+    <div style="display:flex;align-items:center;position:relative;height:36px">
       <button class="book-switcher" data-a="openBookPicker">${activeBookIcon()} ${activeBookName()} ▾</button>
-      <h1 style="flex:1;text-align:center;font-size:clamp(18px,5.5vw,30px);font-weight:800;letter-spacing:-.3px">${n.getFullYear()}年${n.getMonth()+1}月</h1>
-      <div style="width:auto;visibility:hidden;padding:5px 13px;font-size:14px">${activeBookName()} ▾</div>
+      <h1 style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;letter-spacing:-.3px;pointer-events:none;margin:0">${n.getFullYear()}年${n.getMonth()+1}月</h1>
     </div>
     <div class="sum-bar">
       <div class="sum-item"><div class="lbl">本月收入</div><div class="val">$${fmt(sum.income)}</div></div>
@@ -247,7 +259,7 @@ function renderHomeView(){
         html+=mkTitle('🛡️ 保險到期');
         html+=ia.map(i=>{const st=insStatus(i);return mkRow('🛡️',escHtml(i.name||i.company||'保單'),'',st.label,'#B89830');}).join('');
       }
-      return`<div class="card" style="background:linear-gradient(135deg,#FBF4F3,#F5ECEA);border-color:#E0CECC;margin-bottom:12px">
+      return`<div class="card" style="background:var(--surface);border-color:var(--border);margin-bottom:12px">
         <div style="font-size:16px;font-weight:800;color:#7A4848">📢 提醒事項</div>
         ${html}
       </div>`;
@@ -536,7 +548,7 @@ function renderAssetsView(){
       </div>
     </div>`).join('');
     content=`<button class="add-fab" data-a="newLoan" style="margin-bottom:12px">＋ 新增貸款</button>
-    ${totalDebt>0?`<div class="card" style="background:linear-gradient(135deg,#FBF4F3,#F5ECEA);border-color:#E0CECC;margin-bottom:12px;display:flex;gap:24px">
+    ${totalDebt>0?`<div class="card" style="background:var(--surface);border-color:var(--border);margin-bottom:12px;display:flex;gap:24px">
       <div><div style="font-size:11px;color:var(--text2);font-weight:700">總負債</div><div style="font-size:22px;font-weight:800;color:var(--expense)">$${fmt(totalDebt)}</div></div>
       <div><div style="font-size:11px;color:var(--text2);font-weight:700">每月還款</div><div style="font-size:22px;font-weight:800">$${fmt(totalMonthly)}</div></div>
     </div>`:''}
@@ -597,7 +609,7 @@ function renderCalView(){
   return`<div class="hdr"><div class="hdr-in">
     <div class="cal-nav">
       <button class="cal-nb" data-a="cprev">‹</button>
-      <span class="cal-title-text">${y}年 ${MONTHS[m]}</span>
+      <span class="cal-title-text" style="flex:1;text-align:center">${y}年 ${MONTHS[m]}</span>
       <button class="cal-nb" data-a="cnext">›</button>
     </div>
     <div class="sum-bar">
@@ -760,12 +772,7 @@ function renderStatsView(){
   const secTitle=(t)=>`<div style="font-size:17px;font-weight:900;color:var(--text);padding:0 2px;margin-bottom:6px;margin-top:4px">${t}</div>`;
   return`<div class="hdr"><div class="hdr-in">
     <div class="hdr-row">
-      <div style="display:flex;align-items:center;gap:8px">
-        <h1>統計</h1>
-        <button class="stats-toggle-btn active" data-a="statsView" data-v="month">月</button>
-        <button class="stats-toggle-btn" data-a="statsView" data-v="year">年</button>
-        <button class="stats-toggle-btn" data-a="statsView" data-v="history">明細</button>
-      </div>
+      <h1>統計</h1>
       <select id="stats-month-sel" class="stats-sel">
         ${allMonths.map(({y:my,m:mm})=>`<option value="${my}-${mm}" ${state.statsMonth.y===my&&state.statsMonth.m===mm?'selected':''} style="color:#2D1A0E;background:white">${my}年 ${MONTHS[mm]}</option>`).join('')}
       </select>
@@ -779,6 +786,11 @@ function renderStatsView(){
     </div>
   </div></div>
   <div class="content">
+    <div class="stabs" style="margin-bottom:16px">
+      <button class="stab active" data-a="statsView" data-v="month">月統計</button>
+      <button class="stab" data-a="statsView" data-v="year">年統計</button>
+      <button class="stab" data-a="statsView" data-v="history">明細</button>
+    </div>
     ${txs.length===0?`<div class="empty" style="padding:60px 20px">
       <div style="width:64px;height:64px;border-radius:18px;background:var(--surface);border:2px solid var(--border);margin:0 auto 16px;display:flex;align-items:center;justify-content:center">
         <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -871,40 +883,53 @@ function renderSumModal({y,m}){
 function renderHistView(){
   const now=new Date();
   const period=state.histPeriod||'month';
-  const periods=[{id:'month',lbl:'本月'},{id:'prev',lbl:'上月'},{id:'3m',lbl:'近三月'},{id:'all',lbl:'全部'}];
+  const periods=[{id:'month',lbl:'本月'},{id:'prev',lbl:'上月'},{id:'3m',lbl:'近三月'},{id:'all',lbl:'全部'},{id:'custom',lbl:'自訂'}];
   const filters=[{id:'all',lbl:'全部'},{id:'expense',lbl:'支出'},{id:'income',lbl:'收入'},
-    {id:'transfer',lbl:'🔄 轉帳'},{id:'必要',lbl:'必要'},{id:'想要',lbl:'想要'},
-    ...state.accounts.map(a=>({id:'acc:'+a.id,lbl:a.icon+a.name}))];
+    {id:'transfer',lbl:'轉帳'},{id:'必要',lbl:'必要'},{id:'想要',lbl:'想要'}];
   let list=[...activeTxs()];
   if(period==='month'){list=list.filter(t=>{const d=new Date(t.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();});}
   else if(period==='prev'){let pm=now.getMonth()-1,py=now.getFullYear();if(pm<0){pm=11;py--;}list=list.filter(t=>{const d=new Date(t.date);return d.getFullYear()===py&&d.getMonth()===pm;});}
   else if(period==='3m'){const cut=new Date();cut.setMonth(cut.getMonth()-3);list=list.filter(t=>new Date(t.date+'T00:00:00')>=cut);}
+  else if(period==='custom'){
+    if(state.histFrom)list=list.filter(t=>t.date>=state.histFrom);
+    if(state.histTo)list=list.filter(t=>t.date<=state.histTo);
+  }
   if(state.histFilter==='income')list=list.filter(t=>t.type==='income');
   else if(state.histFilter==='expense')list=list.filter(t=>t.type==='expense');
   else if(state.histFilter==='transfer')list=list.filter(t=>t.type==='transfer');
   else if(state.histFilter==='必要')list=list.filter(t=>t.necessity==='必要');
   else if(state.histFilter==='想要')list=list.filter(t=>t.necessity==='想要');
-  else if(state.histFilter.startsWith('acc:'))list=list.filter(t=>t.accountId===state.histFilter.slice(4)||t.fromAccountId===state.histFilter.slice(4)||t.toAccountId===state.histFilter.slice(4));
+  if(state.histAccFilter){const aid=state.histAccFilter;list=list.filter(t=>t.accountId===aid||t.fromAccountId===aid||t.toAccountId===aid);}
   const groups={};list.forEach(t=>{(groups[t.date]=groups[t.date]||[]).push(t);});
   const dates=Object.keys(groups).sort((a,b)=>b.localeCompare(a));
   return`<div class="hdr"><div class="hdr-in">
     <div class="hdr-row">
-      <div style="display:flex;align-items:center;gap:8px">
-        <h1>明細</h1>
-        <button class="stats-toggle-btn" data-a="statsView" data-v="month">月</button>
-        <button class="stats-toggle-btn" data-a="statsView" data-v="year">年</button>
-        <button class="stats-toggle-btn active" data-a="statsView" data-v="history">明細</button>
-      </div>
+      <h1>統計</h1>
       <div class="sub">共 ${list.length} 筆</div>
     </div>
   </div></div>
   <div class="content">
-    <div class="chips" style="margin-bottom:8px">
-      ${periods.map(p=>`<div class="chip${period===p.id?' ac':''}" data-a="histPeriod" data-v="${p.id}">${p.lbl}</div>`).join('')}
+    <div class="stabs" style="margin-bottom:16px">
+      <button class="stab" data-a="statsView" data-v="month">月統計</button>
+      <button class="stab" data-a="statsView" data-v="year">年統計</button>
+      <button class="stab active" data-a="statsView" data-v="history">明細</button>
     </div>
-    <div class="chips">${filters.map(f=>
-      `<div class="chip${state.histFilter===f.id?' ac':''}" data-a="filt" data-v="${f.id}">${f.lbl}</div>`
-    ).join('')}</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      ${periods.map(p=>`<div class="chip${period===p.id?' ac':''}" data-a="histPeriod" data-v="${p.id}">${p.lbl}</div>`).join('')}
+      ${period==='custom'?`
+      <input type="date" id="hist-from" style="width:130px;padding:5px 8px;border:2px solid var(--border);border-radius:20px;font-size:13px;font-family:inherit;outline:none;background:white;color:var(--text)" value="${state.histFrom}">
+      <span style="font-size:13px;color:var(--text2);flex-shrink:0">～</span>
+      <input type="date" id="hist-to" style="width:130px;padding:5px 8px;border:2px solid var(--border);border-radius:20px;font-size:13px;font-family:inherit;outline:none;background:white;color:var(--text)" value="${state.histTo}">
+      <button data-a="histSearch" style="padding:5px 14px;border:2px solid var(--p);border-radius:20px;background:var(--p);color:white;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">搜尋</button>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      ${filters.map(f=>`<div class="chip${state.histFilter===f.id?' ac':''}" data-a="filt" data-v="${f.id}">${f.lbl}</div>`).join('')}
+      ${state.accounts.length>0?`<select id="hist-acc-sel" style="margin-left:auto;padding:5px 14px;border:2px solid ${state.histAccFilter?'var(--p)':'var(--border)'};border-radius:20px;background:${state.histAccFilter?'var(--p)':'white'};color:${state.histAccFilter?'white':'var(--text)'};font-size:13px;font-weight:700;font-family:inherit;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none">
+        <option value="">所有帳戶</option>
+        ${state.accounts.map(a=>`<option value="${a.id}"${state.histAccFilter===a.id?' selected':''}>${escHtml(a.name)}</option>`).join('')}
+      </select>`:''}
+    </div>
+
     ${list.length===0?`<div class="empty"><div class="ei">📭</div><p>沒有符合的記錄</p></div>`:
       dates.map(date=>{
         const dt=groups[date];
@@ -943,7 +968,7 @@ function renderSettingsView(){
     return`<div class="hdr"><div class="hdr-in">
       <div class="hdr-row">
         <div><h1>類別管理</h1></div>
-        <button class="cal-nb" data-a="stab" data-v="main">←</button>
+        <button class="back-btn" data-a="stab" data-v="main">返回</button>
       </div>
     </div></div>
     <div class="content">
@@ -1008,7 +1033,7 @@ function renderSettingsView(){
         <div><h1>固定費用</h1>
           ${monthlyEq>0?`<div style="font-size:13px;opacity:.85;margin-top:2px">每月約 $${fmt(Math.round(monthlyEq))}</div>`:''}
         </div>
-        <button class="cal-nb" data-a="stab" data-v="main">←</button>
+        <button class="back-btn" data-a="stab" data-v="main">返回</button>
       </div>
     </div></div>
     <div class="content">
@@ -1025,7 +1050,7 @@ function renderSettingsView(){
     return`<div class="hdr"><div class="hdr-in">
       <div class="hdr-row">
         <div><h1>重設記帳</h1></div>
-        <button class="cal-nb" data-a="stab" data-v="main">←</button>
+        <button class="back-btn" data-a="stab" data-v="main">返回</button>
       </div>
     </div></div>
     <div class="content">
@@ -1056,17 +1081,10 @@ function renderSettingsView(){
     return`<div class="hdr"><div class="hdr-in">
       <div class="hdr-row">
         <div><h1>匯出資料</h1></div>
-        <button class="cal-nb" data-a="stab" data-v="main">←</button>
+        <button class="back-btn" data-a="stab" data-v="main">返回</button>
       </div>
     </div></div>
     <div class="content">
-      <div class="card" style="margin-bottom:12px">
-        <div class="card-title">完整備份</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:12px">包含所有帳戶、交易、類別、帳本、固定費用、貸款、保險及保單附件。建議每次大改前先匯出一份。</div>
-        <button class="save-btn" data-a="doFullExport" style="margin-bottom:8px">📦 匯出完整備份</button>
-        <button class="outline-btn" data-a="doFullImport">📥 還原備份</button>
-        <input type="file" id="backup-import-input" accept=".json" style="display:none">
-      </div>
       <div class="card" style="margin-bottom:12px">
         <div class="card-title">匯出交易記錄（CSV）</div>
         <div class="form-row" style="margin-bottom:14px">
@@ -1089,12 +1107,28 @@ function renderSettingsView(){
       <button class="save-btn green" data-a="doExport">📤 匯出 CSV</button>
     </div>`;
   }
+  if(state.settingsTab==='backup'){
+    return`<div class="hdr"><div class="hdr-in">
+      <div class="hdr-row">
+        <div><h1>手動備份</h1></div>
+        <button class="back-btn" data-a="stab" data-v="main">返回</button>
+      </div>
+    </div></div>
+    <div class="content">
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:12px">包含所有帳戶、交易、類別、帳本、固定費用、貸款、保險及保單附件。建議每次大改前先匯出一份。</div>
+        <button class="save-btn" data-a="doFullExport" style="margin-bottom:8px">📦 匯出完整備份</button>
+        <button class="outline-btn" data-a="doFullImport">📥 還原備份</button>
+        <input type="file" id="backup-import-input" accept=".json" style="display:none">
+      </div>
+    </div>`;
+  }
   const sectionLabels={currency:'幣別管理',guide:'使用說明'};
   if(sectionLabels[state.settingsTab]){
     return`<div class="hdr"><div class="hdr-in">
       <div class="hdr-row">
         <div><h1>${sectionLabels[state.settingsTab]}</h1></div>
-        <button class="cal-nb" data-a="stab" data-v="main">←</button>
+        <button class="back-btn" data-a="stab" data-v="main">返回</button>
       </div>
     </div></div>
     <div class="content"><div class="card" style="text-align:center;padding:40px 20px">
@@ -1105,17 +1139,32 @@ function renderSettingsView(){
   }
 
   // Main menu
-  const menuItems=[
-    {id:'books',ico:'📚',name:'帳本管理'},
-    {id:'acctypes',ico:'🏷️',name:'帳戶類型'},
-    {id:'categories',ico:'📂',name:'類別管理'},
-    {id:'fixed',ico:'📋',name:'固定費用'},
-    {id:'currency',ico:'💱',name:'幣別管理'},
-    {id:'export',ico:'📤',name:'匯出資料'},
-    {id:'reset',ico:'🗑️',name:'重設記帳'},
-    {id:'guide',ico:'📖',name:'使用說明'},
-    {id:'theme',ico:'🎨',name:'外觀設定'},
+  const menuGroups=[
+    [
+      {id:'books',ico:'📚',name:'帳本管理'},
+      {id:'acctypes',ico:'🏷️',name:'帳戶類型'},
+      {id:'categories',ico:'📂',name:'類別管理'},
+      {id:'fixed',ico:'📋',name:'固定費用'},
+      {id:'currency',ico:'💱',name:'幣別管理'},
+    ],
+    [
+      {id:'theme',ico:'🎨',name:'主題風格'},
+    ],
+    [
+      {id:'export',ico:'📤',name:'匯出資料'},
+      {id:'backup',ico:'📦',name:'手動備份'},
+      {id:'reset',ico:'🗑️',name:'重設記帳'},
+    ],
+    [
+      {id:'guide',ico:'📖',name:'使用說明'},
+    ],
   ];
+  function menuRow(item){return`
+    <div class="setting-row" style="cursor:pointer;padding:9px 0" data-a="stab" data-v="${item.id}">
+      <div class="setting-ico" style="width:38px;height:38px;border-radius:11px;background:var(--bg);border:1px solid var(--border)">${item.ico}</div>
+      <div class="setting-info"><div class="setting-name">${item.name}</div></div>
+      <span style="color:var(--text2);font-size:20px;padding-right:2px">›</span>
+    </div>`;}
   return`<div class="content" style="padding-top:20px">
     <div class="nick-block">
       <div class="nick-avatar">🐱</div>
@@ -1124,15 +1173,7 @@ function renderSettingsView(){
         <button class="icon-btn edit" data-a="openNickModal" style="background:transparent;border:none;flex-shrink:0;color:rgba(255,255,255,.85)">···</button>
       </div>
     </div>
-    <div class="card">${menuItems.map(item=>`
-    <div class="setting-row" style="cursor:pointer;padding:9px 0" data-a="stab" data-v="${item.id}">
-      <div class="setting-ico" style="width:38px;height:38px;border-radius:11px;background:var(--bg);border:1px solid var(--border)">${item.ico}</div>
-      <div class="setting-info">
-        <div class="setting-name">${item.name}</div>
-      </div>
-      <span style="color:var(--text2);font-size:20px;padding-right:2px">›</span>
-    </div>`).join('')}
-    </div>
+    ${menuGroups.map(group=>`<div class="card" style="margin-bottom:12px">${group.map(menuRow).join('')}</div>`).join('')}
   </div>`;
 }
 
@@ -1171,8 +1212,8 @@ function renderThemeView(){
   }).join('');
   return`<div class="hdr"><div class="hdr-in">
     <div class="hdr-row">
-      <div><h1>外觀設定</h1></div>
-      <button class="cal-nb" data-a="stab" data-v="main">←</button>
+      <div><h1>主題風格</h1></div>
+      <button class="back-btn" data-a="stab" data-v="main">返回</button>
     </div>
   </div></div>
   <div class="content">
@@ -1220,7 +1261,7 @@ function renderBooksView(){
   return`<div class="hdr"><div class="hdr-in">
     <div class="hdr-row">
       <div><h1>帳本管理</h1></div>
-      <button class="cal-nb" data-a="stab" data-v="main">←</button>
+      <button class="back-btn" data-a="stab" data-v="main">返回</button>
     </div>
   </div></div>
   <div class="content">
@@ -1250,7 +1291,7 @@ function renderAccTypesView(){
   return`<div class="hdr"><div class="hdr-in">
     <div class="hdr-row">
       <div><h1>帳戶類型</h1></div>
-      <button class="cal-nb" data-a="stab" data-v="main">←</button>
+      <button class="back-btn" data-a="stab" data-v="main">返回</button>
     </div>
   </div></div>
   <div class="content">
@@ -1698,12 +1739,7 @@ function renderYearStatsView(){
   const allYears=[...new Set([...state.txs.map(t=>new Date(t.date).getFullYear()),new Date().getFullYear()])].sort().reverse();
   return`<div class="hdr"><div class="hdr-in">
     <div class="hdr-row">
-      <div style="display:flex;align-items:center;gap:8px">
-        <h1>統計</h1>
-        <button class="stats-toggle-btn" data-a="statsView" data-v="month">月</button>
-        <button class="stats-toggle-btn active" data-a="statsView" data-v="year">年</button>
-        <button class="stats-toggle-btn" data-a="statsView" data-v="history">明細</button>
-      </div>
+      <h1>統計</h1>
       <select id="stats-year-sel" class="stats-sel">
         ${allYears.map(yr=>`<option value="${yr}" ${y===yr?'selected':''} style="color:#3A2828;background:white">${yr}年</option>`).join('')}
       </select>
@@ -1717,6 +1753,11 @@ function renderYearStatsView(){
     </div>
   </div></div>
   <div class="content">
+    <div class="stabs" style="margin-bottom:16px">
+      <button class="stab" data-a="statsView" data-v="month">月統計</button>
+      <button class="stab active" data-a="statsView" data-v="year">年統計</button>
+      <button class="stab" data-a="statsView" data-v="history">明細</button>
+    </div>
     <div class="card">
       <div class="card-title" style="display:flex;align-items:center;gap:12px">收支走勢
         <span style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--income)"><span style="width:10px;height:10px;background:var(--income);border-radius:2px;display:inline-block"></span>收入</span>
