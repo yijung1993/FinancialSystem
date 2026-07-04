@@ -150,7 +150,10 @@ document.addEventListener('click',e=>{
         state.form.subCategory='';if(v==='income')state.form.installment=0;
       }
       renderModalOnly();break;
-    case'setFromAcc':state.form.fromAccountId=v;dmActive('[data-a="setFromAcc"]',v);break;
+    case'setFromAcc':{
+      state.form.fromAccountId=v;
+      if(state.form.toAccountId===v)state.form.toAccountId=state.accounts.find(a=>a.id!==v)?.id||v;
+      renderModalOnly();break;}
     case'setToAcc':state.form.toAccountId=v;dmActive('[data-a="setToAcc"]',v);break;
     case'cat':state.form.category=v;state.form.subCategory='';renderModalOnly();break;
     case'subcat':state.form.subCategory=v;dmSel('[data-a="subcat"]',v,'as');break;

@@ -774,7 +774,7 @@ function renderStatsView(){
     <div class="hdr-row">
       <h1>統計</h1>
       <select id="stats-month-sel" class="stats-sel">
-        ${allMonths.map(({y:my,m:mm})=>`<option value="${my}-${mm}" ${state.statsMonth.y===my&&state.statsMonth.m===mm?'selected':''} style="color:#2D1A0E;background:white">${my}年 ${MONTHS[mm]}</option>`).join('')}
+        ${allMonths.map(({y:my,m:mm})=>`<option value="${my}-${mm}" ${state.statsMonth.y===my&&state.statsMonth.m===mm?'selected':''} style="color:var(--text);background:var(--bg)">${my}年 ${MONTHS[mm]}</option>`).join('')}
       </select>
     </div>
     <div class="sum-bar">
@@ -917,14 +917,14 @@ function renderHistView(){
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">
       ${periods.map(p=>`<div class="chip${period===p.id?' ac':''}" data-a="histPeriod" data-v="${p.id}">${p.lbl}</div>`).join('')}
       ${period==='custom'?`
-      <input type="date" id="hist-from" style="width:130px;padding:5px 8px;border:2px solid var(--border);border-radius:20px;font-size:13px;font-family:inherit;outline:none;background:white;color:var(--text)" value="${state.histFrom}">
+      <input type="date" id="hist-from" style="width:130px;padding:5px 8px;border:2px solid var(--border);border-radius:20px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);color:var(--text)" value="${state.histFrom}">
       <span style="font-size:13px;color:var(--text2);flex-shrink:0">～</span>
-      <input type="date" id="hist-to" style="width:130px;padding:5px 8px;border:2px solid var(--border);border-radius:20px;font-size:13px;font-family:inherit;outline:none;background:white;color:var(--text)" value="${state.histTo}">
+      <input type="date" id="hist-to" style="width:130px;padding:5px 8px;border:2px solid var(--border);border-radius:20px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);color:var(--text)" value="${state.histTo}">
       <button data-a="histSearch" style="padding:5px 14px;border:2px solid var(--p);border-radius:20px;background:var(--p);color:white;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">搜尋</button>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">
       ${filters.map(f=>`<div class="chip${state.histFilter===f.id?' ac':''}" data-a="filt" data-v="${f.id}">${f.lbl}</div>`).join('')}
-      ${state.accounts.length>0?`<select id="hist-acc-sel" style="margin-left:auto;padding:5px 14px;border:2px solid ${state.histAccFilter?'var(--p)':'var(--border)'};border-radius:20px;background:${state.histAccFilter?'var(--p)':'white'};color:${state.histAccFilter?'white':'var(--text)'};font-size:13px;font-weight:700;font-family:inherit;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none">
+      ${state.accounts.length>0?`<select id="hist-acc-sel" style="margin-left:auto;padding:5px 14px;border:2px solid ${state.histAccFilter?'var(--p)':'var(--border)'};border-radius:20px;background:${state.histAccFilter?'var(--p)':'var(--bg)'};color:${state.histAccFilter?'white':'var(--text)'};font-size:13px;font-weight:700;font-family:inherit;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none">
         <option value="">所有帳戶</option>
         ${state.accounts.map(a=>`<option value="${a.id}"${state.histAccFilter===a.id?' selected':''}>${escHtml(a.name)}</option>`).join('')}
       </select>`:''}
@@ -1741,7 +1741,7 @@ function renderYearStatsView(){
     <div class="hdr-row">
       <h1>統計</h1>
       <select id="stats-year-sel" class="stats-sel">
-        ${allYears.map(yr=>`<option value="${yr}" ${y===yr?'selected':''} style="color:#3A2828;background:white">${yr}年</option>`).join('')}
+        ${allYears.map(yr=>`<option value="${yr}" ${y===yr?'selected':''} style="color:var(--text);background:var(--bg)">${yr}年</option>`).join('')}
       </select>
     </div>
     <div class="sum-bar">
