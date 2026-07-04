@@ -153,10 +153,10 @@ const THEMES={
     vars:{'--p':'#9BAFC2','--p2':'#ACCBD8','--p3':'#8B9FBA','--latte':'#8B9FBA','--latte2':'#ACCBD8',
           '--bg':'#FFFFFF','--surface':'#F3F5F9','--text':'#28303A','--text2':'#6878A0','--border':'#DCE0EA',
           '--shadow':'rgba(100,120,160,.06)','--hdr-grad':'linear-gradient(135deg,#8B9FBA 0%,#9BAFC2 50%,#ACCBD8 100%)'}},
-  white:{name:'純白極簡',swatches:['#A0A0A0','#B8B8B8','#CCCCCC'],
-    vars:{'--p':'#888888','--p2':'#AAAAAA','--p3':'#666666','--latte':'#666666','--latte2':'#AAAAAA',
-          '--bg':'#FFFFFF','--surface':'#F5F5F5','--text':'#1A1A1A','--text2':'#888888','--border':'#E0E0E0',
-          '--shadow':'rgba(0,0,0,.05)','--hdr-grad':'linear-gradient(135deg,#8C8C8C 0%,#A8A8A8 50%,#C0C0C0 100%)'}},
+  white:{name:'純白極簡',swatches:['#000000','#333333','#666666'],
+    vars:{'--p':'#000000','--p2':'#2B2B2B','--p3':'#000000','--latte':'#000000','--latte2':'#2B2B2B',
+          '--bg':'#FFFFFF','--surface':'#FFFFFF','--text':'#000000','--text2':'#555555','--border':'#000000',
+          '--shadow':'rgba(0,0,0,.08)','--hdr-grad':'#000000'}},
   dark:{name:'暗黑極簡',swatches:['#333333','#555555','#777777'],
     vars:{'--p':'#888888','--p2':'#AAAAAA','--p3':'#666666','--latte':'#666666','--latte2':'#AAAAAA',
           '--bg':'#181818','--surface':'#242424','--text':'#E8E8E8','--text2':'#909090','--border':'#383838',
@@ -182,6 +182,7 @@ function applyAppTheme(){
   const f=FONTS[state.fontStyle||'huninn'];
   if(f)document.body.style.fontFamily=f.family;
   document.body.dataset.font=state.fontStyle||'huninn';
+  document.body.dataset.theme=state.theme||'pink';
 }
 
 // ── STARTUP INIT ───────────────────────────────────────────────────────────
