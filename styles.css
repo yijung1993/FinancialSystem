@@ -21,8 +21,7 @@
   --hdr-grad:linear-gradient(135deg,#C59390 0%,#C8A5A3 50%,#D0B0B1 100%);
   --font-family:'JFOpenHuninn','Nunito',-apple-system,'PingFang TC','Microsoft JhengHei UI',sans-serif;
 }
-html{overflow-y:scroll;scrollbar-gutter:stable}
-html,body{height:100%}
+html{overflow-y:scroll;height:100%}
 body{font-family:var(--font-family);
   background:var(--bg);color:var(--text);max-width:1000px;margin:0 auto;
   min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
