@@ -184,7 +184,7 @@ function saveFixed(){
 const BACKUP_KEYS=['budget_txs','budget_accounts','budget_cats_exp','budget_cats_inc',
   'budget_ef','budget_nickname','budget_books','budget_active_book','budget_df',
   'budget_hide_bal','budget_loans','budget_fixed','budget_insurances',
-  'budget_ins_members','budget_acc_types','budget_mode'];
+  'budget_ins_members','budget_acc_types','budget_mode','budget_goals'];
 function bufToB64(buf){
   const u8=new Uint8Array(buf);let s='';
   for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode(...u8.subarray(i,i+8192));
@@ -527,4 +527,54 @@ function deleteIns(id){
   if(ins?.pdfId)idbDel(ins.pdfId).catch(()=>{});
   state.insurances=state.insurances.filter(i=>i.id!==id);
   save('budget_insurances',state.insurances);renderApp();
+}
+
+// ── GOALS / DREAMS ─────────────────────────────────────────────────────────
+function goalProgress(g){
+  const total=(g.tasks||[]).length;
+  if(!total)return null;
+  const done=g.tasks.filter(t=>t.done).length;
+  return{done,total,pct:Math.round((done/total)*100)};
+}
+function saveGoal(){
+  const f=state.editForm;
+  const name=(f.goalName||'').trim();
+  if(!name){showToast('請輸入名稱');return;}
+  if(f.goalId){
+    const i=state.goals.findIndex(g=>g.id===f.goalId);
+    if(i>=0)state.goals[i]={...state.goals[i],name,type:f.goalType||'goal'};
+  }else{
+    state.goals.push({id:'goal_'+Date.now(),name,type:f.goalType||'goal',tasks:[],achieved:false,createdAt:todayStr()});
+  }
+  save('budget_goals',state.goals);
+  state.modal=null;showToast('已儲存 ✓');renderApp();
+}
+function deleteGoal(id){
+  if(!confirm('確定刪除這個項目？拆解的任務也會一併刪除。'))return;
+  state.goals=state.goals.filter(g=>g.id!==id);
+  if(state.dreamFund.linkedGoalId===id){state.dreamFund.linkedGoalId=null;save('budget_df',state.dreamFund);}
+  save('budget_goals',state.goals);
+  state.modal=null;renderApp();
+}
+function toggleGoalTask(goalId,taskId){
+  const g=state.goals.find(x=>x.id===goalId);if(!g)return;
+  const t=(g.tasks||[]).find(x=>x.id===taskId);if(!t)return;
+  t.done=!t.done;
+  save('budget_goals',state.goals);renderApp();
+}
+function addGoalTask(goalId,text){
+  const g=state.goals.find(x=>x.id===goalId);if(!g)return;
+  const v=(text||'').trim();if(!v)return;
+  g.tasks=[...(g.tasks||[]),{id:'t_'+Date.now(),text:v,done:false}];
+  save('budget_goals',state.goals);renderApp();
+}
+function deleteGoalTask(goalId,taskId){
+  const g=state.goals.find(x=>x.id===goalId);if(!g)return;
+  g.tasks=(g.tasks||[]).filter(t=>t.id!==taskId);
+  save('budget_goals',state.goals);renderApp();
+}
+function toggleGoalAchieved(goalId){
+  const g=state.goals.find(x=>x.id===goalId);if(!g)return;
+  g.achieved=!g.achieved;
+  save('budget_goals',state.goals);renderApp();
 }
