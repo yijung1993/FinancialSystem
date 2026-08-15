@@ -49,7 +49,7 @@ function renderApp(){
   if((state.module==='finance'&&state.view==='calendar')||state.module==='home')setTimeout(()=>drawDonut('cal-donut',state.calMonth.y,state.calMonth.m),50);
 }
 function renderModuleBody(){
-  if(state.module==='finance')return renderTopBar()+renderView()+renderBottomNav();
+  if(state.module==='finance')return`<div class="finance-module">${renderTopBar()+renderView()+renderBottomNav()}</div>`;
   if(state.module==='home')return renderHomeModule();
   if(state.module==='todo')return renderPlaceholderModule('✅','代辦清單');
   if(state.module==='project')return renderPlaceholderModule('📋','專案排程');
