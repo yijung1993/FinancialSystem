@@ -101,19 +101,19 @@ function renderRemindersCard(){
   const fx=fixedExpenseReminders();
   if(!cc.length&&!fx.length){
     return`<div class="card home-feature-card"><div class="hf-title">七天內提醒</div>
-      <div class="empty" style="padding:20px 10px"><div class="ei">✅</div><p>最近沒有待繳款或固定費用</p></div>
+      <div class="empty" style="padding:20px 10px"><p>最近沒有待繳款或固定費用</p></div>
     </div>`;
   }
   const ccItems=cc.map(r=>`<div class="reminder-row">
     <span class="rd-badge">${r.days<=0?'今天':`${r.days}天後`}</span>
-    <span class="rd-lbl">${r.acc.icon} ${escHtml(r.acc.name)} 信用卡繳款</span>
+    <span class="rd-lbl">${escHtml(r.acc.name)} 信用卡繳款</span>
   </div>`).join('');
   const todayS=todayStr();
   const fxItems=fx.map(f=>{
     const days=Math.round((new Date(f.nextDate+'T00:00:00')-new Date(todayS+'T00:00:00'))/86400000);
     return`<div class="reminder-row">
       <span class="rd-badge">${days<=0?'今天':`${days}天後`}</span>
-      <span class="rd-lbl">${f.icon||'💸'} ${escHtml(f.name)}</span>
+      <span class="rd-lbl">${escHtml(f.name)}</span>
     </div>`;
   }).join('');
   return`<div class="card home-feature-card"><div class="hf-title">七天內提醒</div><div class="hf-scroll">${ccItems}${fxItems}</div></div>`;
