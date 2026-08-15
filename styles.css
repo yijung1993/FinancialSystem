@@ -128,8 +128,11 @@ body{font-family:var(--font-family);
 .sum-item .lbl{font-size:14px;opacity:.85;font-weight:500}
 .sum-item .val{font-size:24px;font-weight:800;margin-top:2px}
 
-/* 財務模組：內容不限制寬度，跟隨瀏覽器縮放 */
+/* 財務模組：內容不限制寬度，跟隨瀏覽器縮放；粉紅卡片與下方內容改用同一層 padding 對齊，並補上間隙 */
+.finance-module{padding-left:16px;padding-right:16px}
 .finance-module .content,.finance-module .hdr-in{max-width:none}
+.finance-module .hdr{margin-left:0;margin-right:0;margin-bottom:14px}
+.finance-module .content{padding-left:0;padding-right:0}
 
 /* content & card */
 .content{padding:14px 16px calc(var(--nb)+20px + env(safe-area-inset-bottom,0px))}
@@ -553,11 +556,12 @@ body[data-font="dandan"] .hdr h1{font-size:25px}
 /* desktop */
 @media(min-width:768px){
   :root{--sbw:230px;--sbgap:16px;--sbreserve:calc(var(--sbw) + var(--sbgap)*2)}
-  body{max-width:none;margin:0;padding-bottom:0;overflow-y:scroll;padding-left:var(--sbreserve)}
+  body{max-width:none;margin:0;padding-bottom:0;padding-left:var(--sbreserve)}
   #app{padding-top:0}
   .top-bar{display:none}
   .sidebar{display:flex;flex-direction:column}
   .bottom-nav{left:calc(50% + var(--sbreserve)/2)}
+  .finance-module{padding-left:28px;padding-right:28px}
   .hdr{margin:24px 28px 0}
   .cal-compact-grid{margin:12px 28px 0}
   .hdr-in{padding:28px 28px 20px;min-height:170px}
