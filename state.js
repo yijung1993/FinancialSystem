@@ -88,6 +88,7 @@ function todayStr(){return new Date().toISOString().split('T')[0]}
 // ── STATE ──────────────────────────────────────────────────────────────────
 const _now=new Date();
 let state={
+  module:'home',
   view:'add',
   txs:load('budget_txs',[]),
   accounts:load('budget_accounts',DEFAULT_ACCOUNTS),
@@ -105,7 +106,11 @@ let state={
   catTypeTab:'expense',
   nickname:load('budget_nickname',''),
   homeDayOffset:0,
-  dreamFund:load('budget_df',{accountId:null,target:0,wish:''}),
+  dreamFund:load('budget_df',{accountId:null,target:0,wish:'',linkedGoalId:null}),
+  goals:load('budget_goals',[]),
+  goalTypeFilter:'all',
+  moduleOrder:load('budget_module_order',null),
+  homeHiddenCards:load('budget_home_hidden_cards',[]),
   accHideBalance:load('budget_hide_bal',false),
   loans:load('budget_loans',[]),
   fixedExpenses:load('budget_fixed',[]),
@@ -228,6 +233,7 @@ function saveAll(){
   save('budget_books',state.books);
   save('budget_active_book',state.activeBook);
   save('budget_df',state.dreamFund);
+  save('budget_goals',state.goals);
   save('budget_hide_bal',state.accHideBalance);
   save('budget_loans',state.loans);
   save('budget_fixed',state.fixedExpenses);

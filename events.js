@@ -68,6 +68,64 @@ function attachInputs(){
     });
   }
   if(state.view==='insurance')initInsDragSort();
+  initModuleDragSort();
+}
+function initModuleDragSort(){
+  const moveModule=(fromId,toId)=>{
+    const ord=getOrderedModules().map(m=>m.id);
+    const fi=ord.indexOf(fromId),ti=ord.indexOf(toId);
+    if(fi<0||ti<0||fi===ti)return;
+    ord.splice(ti,0,ord.splice(fi,1)[0]);
+    state.moduleOrder=ord;save('budget_module_order',ord);
+    renderApp();
+  };
+  const clearOver=()=>document.querySelectorAll('.snb-btn,.book-picker-item').forEach(c=>c.classList.remove('drag-over'));
+  // 桌面側邊欄：滑鼠拖曳
+  let dragId=null;
+  document.querySelectorAll('.snb-btn[data-mod-id]:not([data-drag-init])').forEach(row=>{
+    row.dataset.dragInit='1';
+    row.setAttribute('draggable','true');
+    row.addEventListener('dragstart',()=>{dragId=row.dataset.modId;requestAnimationFrame(()=>row.classList.add('dragging'));});
+    row.addEventListener('dragend',()=>{dragId=null;clearOver();row.classList.remove('dragging');});
+    row.addEventListener('dragover',e=>e.preventDefault());
+    row.addEventListener('dragenter',e=>{e.preventDefault();clearOver();if(row.dataset.modId!==dragId)row.classList.add('drag-over');});
+    row.addEventListener('drop',e=>{e.preventDefault();const to=row.dataset.modId;clearOver();if(dragId&&dragId!==to)moveModule(dragId,to);});
+  });
+  // 手機切換視窗：拖曳把手（觸控）
+  let ghost=null,touchDragId=null;
+  document.querySelectorAll('.book-picker-item[data-mod-id]:not([data-drag-init])').forEach(row=>{
+    row.dataset.dragInit='1';
+    const handle=row.querySelector('.drag-handle');
+    if(!handle)return;
+    handle.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      touchDragId=row.dataset.modId;
+      const r=row.getBoundingClientRect();
+      ghost=row.cloneNode(true);
+      Object.assign(ghost.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',
+        zIndex:'9999',opacity:'0.88',pointerEvents:'none',boxShadow:'0 8px 28px rgba(0,0,0,.22)',transform:'scale(1.03)'});
+      document.body.appendChild(ghost);row.style.opacity='0.3';
+    },{passive:false});
+    handle.addEventListener('touchmove',e=>{
+      e.preventDefault();if(!ghost)return;
+      const t=e.touches[0],gh=ghost.getBoundingClientRect();
+      ghost.style.top=(t.clientY-gh.height/2)+'px';ghost.style.left=(t.clientX-gh.width/2)+'px';
+      clearOver();ghost.style.visibility='hidden';
+      const el=document.elementFromPoint(t.clientX,t.clientY);ghost.style.visibility='';
+      const tc=el?.closest('.book-picker-item[data-mod-id]');
+      if(tc&&tc.dataset.modId!==touchDragId)tc.classList.add('drag-over');
+    },{passive:false});
+    handle.addEventListener('touchend',e=>{
+      if(!ghost){touchDragId=null;return;}
+      const t=e.changedTouches[0];ghost.style.visibility='hidden';
+      const el=document.elementFromPoint(t.clientX,t.clientY);
+      ghost.remove();ghost=null;
+      clearOver();document.querySelectorAll('.book-picker-item').forEach(c=>c.style.opacity='');
+      const tc=el?.closest('.book-picker-item[data-mod-id]');
+      const fid=touchDragId;touchDragId=null;
+      if(tc&&tc.dataset.modId!==fid)moveModule(fid,tc.dataset.modId);
+    });
+  });
 }
 function initInsDragSort(){
   const cards=document.querySelectorAll('.ins-card-sm[data-ins-id]:not([data-drag-init])');
@@ -134,6 +192,12 @@ function bindOverlay(){
 }
 
 document.addEventListener('click',e=>{
+  const modEl=e.target.closest('[data-module]');
+  if(modEl){
+    state.module=modEl.dataset.module;
+    if(modEl.dataset.view){state.view=modEl.dataset.view;if(modEl.dataset.view==='settings')state.settingsTab=modEl.dataset.settingsTab||'main';}
+    state.modal=null;window.scrollTo(0,0);renderApp();return;
+  }
   const navEl=e.target.closest('[data-nav]');
   if(navEl){const nv=navEl.dataset.nav;if(nv==='settings')state.settingsTab='main';state.view=nv;state.modal=null;window.scrollTo(0,0);renderApp();return;}
   const el=e.target.closest('[data-a]');if(!el)return;
@@ -192,6 +256,7 @@ document.addEventListener('click',e=>{
         else state.editForm.note=el.value;
       }});updateTx();break;}
     case'closeModal':state.modal=null;renderApp();break;
+    case'moduleMenu':state.modal={type:'moduleMenu'};renderApp();break;
     case'cprev':
       if(state.calMonth.m===0){state.calMonth.y--;state.calMonth.m=11;}else state.calMonth.m--;
       renderApp();break;
@@ -556,11 +621,36 @@ document.addEventListener('click',e=>{
     case'toggleHideBal':state.accHideBalance=!state.accHideBalance;save('budget_hide_bal',state.accHideBalance);renderApp();break;
     case'editDF':state.editForm={...state.dreamFund};state.modal={type:'editDF'};renderApp();break;
     case'df-acc':state.editForm.accountId=v;dmActive('[data-a="df-acc"]',v);break;
+    case'df-goal':state.editForm.linkedGoalId=v;dmActive('[data-a="df-goal"]',v);break;
     case'saveDF':{
       const wEl=document.getElementById('df-wish'),tEl=document.getElementById('df-target');
       if(wEl)state.editForm.wish=wEl.value;if(tEl)state.editForm.target=tEl.value;
-      state.dreamFund={accountId:state.editForm.accountId||null,target:parseFloat(state.editForm.target)||0,wish:(state.editForm.wish||'').trim()};
+      state.dreamFund={accountId:state.editForm.accountId||null,target:parseFloat(state.editForm.target)||0,
+        wish:(state.editForm.wish||'').trim(),linkedGoalId:state.editForm.linkedGoalId||null};
       saveAll();state.modal=null;showToast('夢想基金已設定 ✓');renderApp();break;}
+    case'newGoal':state.editForm={goalType:'goal',goalName:''};state.modal={type:'editGoal'};renderApp();break;
+    case'editGoal':{const g=state.goals.find(x=>x.id===v);
+      if(g)state.editForm={goalId:g.id,goalType:g.type,goalName:g.name};
+      state.modal={type:'editGoal'};renderApp();break;}
+    case'goalType':state.editForm.goalType=v;dmActive('[data-a="goalType"]',v);break;
+    case'saveGoalBtn':{
+      const nEl=document.getElementById('ef-goalname');
+      if(nEl)state.editForm.goalName=nEl.value;
+      saveGoal();break;}
+    case'delGoal':deleteGoal(v);break;
+    case'goalTypeFilt':state.goalTypeFilter=v;renderApp();break;
+    case'toggleGoalTask':toggleGoalTask(el.dataset.id,v);break;
+    case'delGoalTask':deleteGoalTask(el.dataset.id,v);break;
+    case'addGoalTask':{
+      const inp=document.getElementById('newtask-'+v);
+      addGoalTask(v,inp?inp.value:'');break;}
+    case'toggleGoalAchieved':toggleGoalAchieved(v);break;
+    case'toggleHomeCard':{
+      const hidden=state.homeHiddenCards||(state.homeHiddenCards=[]);
+      const i=hidden.indexOf(v);
+      if(i>=0)hidden.splice(i,1);else hidden.push(v);
+      save('budget_home_hidden_cards',hidden);
+      renderApp();break;}
   }
 });
 

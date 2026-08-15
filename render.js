@@ -16,23 +16,274 @@ function renderModalOnly(){
 // 直接更新 class，完全不碰 DOM 結構
 function dmActive(sel,v){document.querySelectorAll(sel).forEach(b=>b.classList.toggle('active',b.dataset.v===v));}
 function dmSel(sel,v,cls='sel'){document.querySelectorAll(sel).forEach(b=>b.classList.toggle(cls,b.dataset.v===v));}
+// ── WORKSPACE MODULES ────────────────────────────────────────────────────
+const MODULES=[
+  {id:'home',lbl:'首頁',module:'home'},
+  {id:'finance',lbl:'財務',module:'finance',view:'add'},
+  {id:'todo',lbl:'代辦清單',module:'todo'},
+  {id:'project',lbl:'專案排程',module:'project'},
+  {id:'goals',lbl:'目標設定',module:'goals'},
+  {id:'habit',lbl:'習慣養成',module:'habit'},
+  {id:'gratitude',lbl:'感恩日記',module:'gratitude'},
+  {id:'cycle',lbl:'月經週期',module:'cycle'},
+  {id:'settings',lbl:'設定',module:'settings'},
+];
+function isModuleActive(item){
+  if(item.module!=='finance')return state.module===item.module;
+  return state.module==='finance'&&state.view!=='settings';
+}
+// 依使用者自訂順序排列 MODULES（找不到的新項目排在最後，失效的舊 id 自動忽略）
+function getOrderedModules(){
+  const ord=state.moduleOrder;
+  if(!ord||!Array.isArray(ord))return MODULES;
+  const map=new Map(MODULES.map(m=>[m.id,m]));
+  const result=ord.map(id=>map.get(id)).filter(Boolean);
+  MODULES.forEach(m=>{if(!ord.includes(m.id))result.push(m);});
+  return result;
+}
 function renderApp(){
   document.getElementById('app').innerHTML=
-    renderTopBar()+renderView()+(state.modal?renderModal():'')+renderBottomNav();
+    renderSidebar()+renderMobileHubBar()+renderModuleBody()+(state.modal?renderModal():'');
   attachInputs();bindOverlay();
-  if(state.view==='stats'&&state.statsView==='month'){setTimeout(()=>drawDonut(),50);setTimeout(()=>drawCatPie(),50);}
-  if(state.view==='calendar')setTimeout(()=>drawDonut('cal-donut',state.calMonth.y,state.calMonth.m),50);
+  if(state.module==='finance'&&state.view==='stats'&&state.statsView==='month'){setTimeout(()=>drawDonut(),50);setTimeout(()=>drawCatPie(),50);}
+  if((state.module==='finance'&&state.view==='calendar')||state.module==='home')setTimeout(()=>drawDonut('cal-donut',state.calMonth.y,state.calMonth.m),50);
+}
+function renderModuleBody(){
+  if(state.module==='finance')return renderTopBar()+renderView()+renderBottomNav();
+  if(state.module==='home')return renderHomeModule();
+  if(state.module==='todo')return renderPlaceholderModule('✅','代辦清單');
+  if(state.module==='project')return renderPlaceholderModule('📋','專案排程');
+  if(state.module==='goals')return renderGoalsModule();
+  if(state.module==='habit')return renderPlaceholderModule('🌱','習慣養成');
+  if(state.module==='gratitude')return renderPlaceholderModule('🙏','感恩日記');
+  if(state.module==='cycle')return renderPlaceholderModule('🌸','月經週期');
+  if(state.module==='settings')return renderWorkspaceSettingsModule();
+  return'';
+}
+function renderDreamFundCard(){
+  const df=state.dreamFund;
+  const dfAcc=df.accountId?getAcc(df.accountId):null;
+  const dfBal=dfAcc?accBalance(df.accountId):null;
+  const dfPct=df.target>0&&dfBal!==null?Math.min(Math.round((dfBal/df.target)*100),100):null;
+  const linkedGoal=df.linkedGoalId?(state.goals||[]).find(g=>g.id===df.linkedGoalId):null;
+  const gp=linkedGoal?goalProgress(linkedGoal):null;
+  return`<div class="card" style="background:var(--surface);border-color:var(--border)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0">
+        <div style="font-size:clamp(16px,4.5vw,22px);font-weight:900;color:#7A4848;white-space:nowrap">夢想基金</div>
+        ${df.wish?`<span style="font-size:clamp(14px,4vw,22px);font-weight:700;color:#8B1A1A;background:rgba(139,26,26,0.1);padding:2px 12px;border-radius:8px;white-space:nowrap">${escHtml(df.wish)}</span>`:''}
+      </div>
+      <button class="icon-btn edit" data-a="editDF" style="flex-shrink:0">···</button>
+    </div>
+    <div class="ef-bal" style="color:${(dfBal||0)>=0?'var(--income)':'var(--expense)'}">$${fmt(dfBal||0)}</div>
+    <div class="ef-bar-wrap">
+      <div class="bar-bg" style="height:6px">
+        <div class="bar-fill ok" style="width:${dfPct||0}%"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">
+        ${df.target>0?`${dfPct||0}% · 目標 $${fmt(df.target)}`:'尚未設定目標'}
+      </div>
+    </div>
+    <div class="ef-hint" style="margin-top:4px">${dfAcc?`${dfAcc.icon} ${escHtml(dfAcc.name)}`:'尚未連結帳戶'}</div>
+    ${linkedGoal?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="font-size:12px;color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🌟 連結夢想：${escHtml(linkedGoal.name)}</div>
+      ${linkedGoal.achieved?`<span class="goal-achieved-badge">✓ 已達成</span>`:gp?`<span style="font-size:12px;font-weight:700;color:var(--text2);flex-shrink:0">任務 ${gp.done}/${gp.total}</span>`:''}
+    </div>`:''}
+  </div>`;
+}
+function greetingText(){
+  const h=new Date().getHours();
+  const g=h<5?'夜深了':h<11?'早安':h<13?'午安':h<18?'下午好':'晚安';
+  return state.nickname?`${g}，${escHtml(state.nickname)}`:g;
+}
+function renderRemindersCard(){
+  const cc=creditCardReminders();
+  const fx=fixedExpenseReminders();
+  if(!cc.length&&!fx.length){
+    return`<div class="card home-feature-card"><div class="hf-title">七天內提醒</div>
+      <div class="empty" style="padding:20px 10px"><div class="ei">✅</div><p>最近沒有待繳款或固定費用</p></div>
+    </div>`;
+  }
+  const ccItems=cc.map(r=>`<div class="reminder-row">
+    <span class="rd-badge">${r.days<=0?'今天':`${r.days}天後`}</span>
+    <span class="rd-lbl">${r.acc.icon} ${escHtml(r.acc.name)} 信用卡繳款</span>
+  </div>`).join('');
+  const todayS=todayStr();
+  const fxItems=fx.map(f=>{
+    const days=Math.round((new Date(f.nextDate+'T00:00:00')-new Date(todayS+'T00:00:00'))/86400000);
+    return`<div class="reminder-row">
+      <span class="rd-badge">${days<=0?'今天':`${days}天後`}</span>
+      <span class="rd-lbl">${f.icon||'💸'} ${escHtml(f.name)}</span>
+    </div>`;
+  }).join('');
+  return`<div class="card home-feature-card"><div class="hf-title">七天內提醒</div><div class="hf-scroll">${ccItems}${fxItems}</div></div>`;
+}
+function renderTodoTeaserCard(){
+  return`<div class="card home-feature-card hf-clickable" data-module="todo"><div class="hf-title">代辦清單</div>
+    <div class="hf-hint">代辦清單還沒開始蓋，敬請期待</div>
+  </div>`;
+}
+function renderGoalListBody(list){
+  if(!list.length)return`<div class="hf-hint">尚未新增項目，點擊開始規劃</div>`;
+  return`<div class="hf-scroll">${list.map(g=>`<div class="reminder-row">
+    <span class="rd-lbl">${g.achieved?'✓ ':''}${escHtml(g.name)}</span>
+  </div>`).join('')}</div>`;
+}
+function renderDreamTeaserCard(){
+  const dreams=(state.goals||[]).filter(g=>g.type==='dream');
+  return`<div class="card home-feature-card hf-clickable" data-module="goals"><div class="hf-title">夢想清單</div>
+    ${renderGoalListBody(dreams)}
+  </div>`;
+}
+function renderGoalsTeaserCard(){
+  const goals=(state.goals||[]).filter(g=>g.type==='goal');
+  return`<div class="card home-feature-card hf-clickable" data-module="goals"><div class="hf-title">目標設定</div>
+    ${renderGoalListBody(goals)}
+  </div>`;
+}
+function renderProjectTeaserCard(){
+  return`<div class="card home-feature-card hf-clickable" data-module="project"><div class="hf-title">專案排程</div>
+    <div class="hf-hint">規劃中，敬請期待</div>
+  </div>`;
+}
+function renderHomeModule(){
+  const n=new Date();
+  const wd=['日','一','二','三','四','五','六'][n.getDay()];
+  const hidden=state.homeHiddenCards||[];
+  const cards={
+    reminders:renderRemindersCard,
+    dream:renderDreamTeaserCard,
+    goals:renderGoalsTeaserCard,
+    project:renderProjectTeaserCard,
+    todo:renderTodoTeaserCard,
+  };
+  const leftHtml=(hidden.includes('reminders')?'':cards.reminders())+renderCalView({compact:true});
+  const rightHtml=['todo','dream','goals','project'].filter(id=>!hidden.includes(id)).map(id=>cards[id]()).join('');
+  return`<div class="content content-fluid">
+    <div class="dash-greet">
+      <h1>${greetingText()} 👋</h1>
+      <div class="dash-date">${n.getFullYear()} 年 ${n.getMonth()+1} 月 ${n.getDate()} 日・星期${wd}</div>
+    </div>
+    <div class="home-2col">
+      <div class="home-col-left">${leftHtml}</div>
+      <div class="home-col-right">${rightHtml}</div>
+    </div>
+  </div>`;
+}
+function renderPlaceholderModule(emoji,lbl){
+  return`<div class="content">
+    <div class="dash-greet">
+      <h1>${lbl}</h1>
+      <div class="dash-date">這個模組正在規劃中</div>
+    </div>
+    <div class="empty">
+      <div class="ei">${emoji}</div>
+      <p>${lbl}功能即將推出，敬請期待</p>
+    </div>
+  </div>`;
+}
+// ── RENDER: GOALS / DREAMS ──────────────────────────────────────────────────
+function renderGoalsModule(){
+  const goals=state.goals||[];
+  const filter=state.goalTypeFilter||'all';
+  const filtered=filter==='all'?goals:goals.filter(g=>g.type===filter);
+  const tabs=[{id:'all',lbl:'全部'},{id:'goal',lbl:'🎯 目標'},{id:'dream',lbl:'🌟 夢想'}];
+  return`<div class="content">
+    <div class="dash-greet">
+      <h1>目標設定</h1>
+      <div class="dash-date">寫下你的目標或夢想，拆解成小任務一步步達成</div>
+    </div>
+    <button class="save-btn" data-a="newGoal" style="margin-bottom:14px">＋ 新增目標／夢想</button>
+    <div class="chips">${tabs.map(t=>
+      `<button class="chip${filter===t.id?' ac':''}" data-a="goalTypeFilt" data-v="${t.id}">${t.lbl}</button>`
+    ).join('')}</div>
+    ${filtered.length?filtered.map(g=>renderGoalCard(g)).join(''):`
+      <div class="empty"><div class="ei">🎯</div><p>還沒有任何項目，點上面按鈕新增一個吧</p></div>`}
+  </div>`;
+}
+function renderGoalCard(g){
+  const tasks=g.tasks||[];
+  const gp=goalProgress(g);
+  const typeLbl=g.type==='dream'?'🌟 夢想':'🎯 目標';
+  const typeCls=g.type==='dream'?'dream':'goal';
+  return`<div class="goal-card${g.achieved?' achieved':''}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+      <div style="min-width:0;flex:1">
+        <span class="goal-type-badge ${typeCls}">${typeLbl}</span>
+        <div style="font-size:17px;font-weight:800;margin-top:4px;${g.achieved?'text-decoration:line-through;color:var(--text2)':''}">${escHtml(g.name)}</div>
+      </div>
+      <button class="icon-btn edit" data-a="editGoal" data-v="${g.id}" style="flex-shrink:0">···</button>
+    </div>
+    ${gp?`<div style="margin-bottom:8px">
+      <div class="bar-bg"><div class="bar-fill ok" style="width:${gp.pct}%"></div></div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">已完成 ${gp.done}/${gp.total}（${gp.pct}%）</div>
+    </div>`:''}
+    <div class="goal-tasks">
+      ${tasks.map(t=>`<div class="goal-task-row">
+        <span class="goal-check${t.done?' done':''}" data-a="toggleGoalTask" data-id="${g.id}" data-v="${t.id}">${t.done?'✓':''}</span>
+        <span class="goal-task-text${t.done?' done':''}">${escHtml(t.text)}</span>
+        <span class="goal-task-del" data-a="delGoalTask" data-id="${g.id}" data-v="${t.id}">✕</span>
+      </div>`).join('')}
+    </div>
+    <div class="goal-add-task">
+      <input type="text" id="newtask-${g.id}" placeholder="新增小任務…">
+      <button data-a="addGoalTask" data-v="${g.id}">＋</button>
+    </div>
+    <div style="margin-top:10px;display:flex;justify-content:flex-end">
+      ${g.achieved?`<button class="outline-btn" style="padding:6px 14px;font-size:13px" data-a="toggleGoalAchieved" data-v="${g.id}">↺ 取消達成</button>`
+        :`<button class="save-btn green" style="padding:6px 14px;font-size:13px;width:auto" data-a="toggleGoalAchieved" data-v="${g.id}">✓ 標記已達成</button>`}
+    </div>
+  </div>`;
+}
+function renderEditGoalModal(){
+  const f=state.editForm;
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${f.goalId?'編輯項目':'新增目標／夢想'}</div>
+    <div class="slabel">類型</div>
+    <div class="acc-row" style="margin-bottom:14px">
+      <button class="acc-pill${f.goalType!=='dream'?' active':''}" data-a="goalType" data-v="goal">🎯 目標</button>
+      <button class="acc-pill${f.goalType==='dream'?' active':''}" data-a="goalType" data-v="dream">🌟 夢想</button>
+    </div>
+    <div class="form-field" style="margin-bottom:14px"><label>名稱</label>
+      <input class="form-input" id="ef-goalname" type="text" placeholder="例：學會游泳、去日本旅遊" value="${escHtml(f.goalName||'')}"></div>
+    <div class="modal-btns">
+      <button class="save-btn" data-a="saveGoalBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
+    ${f.goalId?`<button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delGoal" data-v="${f.goalId}">🗑 刪除</button>`:''}
+  </div></div>`;
+}
+function renderMobileHubBar(){
+  const cur=MODULES.find(t=>isModuleActive(t));
+  return`<div class="hub-bar">
+    <button class="hub-btn-inline" data-a="moduleMenu">☰</button>
+    <span class="hub-bar-title">${cur?cur.lbl:''}</span>
+  </div>`;
+}
+function renderModuleMenuModal(){
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">切換功能</div>
+    <div class="book-picker-list">${getOrderedModules().map(t=>
+      `<div class="book-picker-item${isModuleActive(t)?' active':''}" data-mod-id="${t.id}" data-module="${t.module}"${t.view?` data-view="${t.view}"`:''}${t.settingsTab?` data-settings-tab="${t.settingsTab}"`:''}>
+        <div class="book-picker-info"><div class="book-picker-name">${t.lbl}</div></div>
+        ${isModuleActive(t)?'<span style="color:var(--p);font-size:20px">✓</span>':''}
+        <span class="drag-handle" title="拖曳排序">⠿</span>
+      </div>`
+    ).join('')}</div>
+    <button class="outline-btn" style="width:100%;margin-top:10px" data-a="closeModal">關閉</button>
+  </div></div>`;
 }
 function renderSidebar(){
-  const tabs=[{id:'add',img:'home',lbl:'首頁'},{id:'calendar',img:'calendar',lbl:'行事曆'},
-    {id:'assets',img:'assets',lbl:'資產'},{id:'stats',img:'stats',lbl:'統計'},
-    {id:'settings',img:'settings',lbl:'設定'}];
-  const activeView=(['history'].includes(state.view)?'stats':['insurance'].includes(state.view)?'assets':state.view);
   return`<aside class="sidebar">
-    <nav class="snb">${tabs.map(t=>
-      `<button class="snb-btn${activeView===t.id?' active':''}" data-nav="${t.id}">
-        <span class="snb-ico"><img src="icons/${t.img}.png" width="22" height="22"></span>
+    <div class="sb-title-row">
+      <div class="sb-title">我的工作台</div>
+    </div>
+    <nav class="snb">${getOrderedModules().map(t=>
+      `<button class="snb-btn${isModuleActive(t)?' active':''}" data-mod-id="${t.id}" data-module="${t.module}"${t.view?` data-view="${t.view}"`:''}${t.settingsTab?` data-settings-tab="${t.settingsTab}"`:''}>
         <span class="snb-lbl">${t.lbl}</span>
+        <span class="drag-handle" title="拖曳排序">⠿</span>
       </button>`
     ).join('')}</nav>
   </aside>`;
@@ -80,6 +331,8 @@ function renderModal(){
   if(type==='editAccType')return renderEditAccTypeModal();
   if(type==='bookMenu')return renderBookMenuModal();
   if(type==='joinRoom')return renderJoinRoomModal();
+  if(type==='moduleMenu')return renderModuleMenuModal();
+  if(type==='editGoal')return renderEditGoalModal();
   return'';
 }
 function renderView(){
@@ -148,12 +401,6 @@ function renderHomeView(){
   const efTarget=ef.targetAmount>0?ef.targetAmount:calcEFTarget();
   const efPct=efTarget>0&&efBal!==null?Math.min(Math.round((efBal/efTarget)*100),100):null;
 
-  // Dream fund
-  const df=state.dreamFund;
-  const dfAcc=df.accountId?getAcc(df.accountId):null;
-  const dfBal=dfAcc?accBalance(df.accountId):null;
-  const dfPct=df.target>0&&dfBal!==null?Math.min(Math.round((dfBal/df.target)*100),100):null;
-
   // Day navigation
   const dayStr=offsetDate(state.homeDayOffset);
   const dayD=new Date(dayStr+'T00:00:00');
@@ -177,25 +424,7 @@ function renderHomeView(){
     <div class="ef-hint" style="margin-top:4px">${efAcc?`${efAcc.icon} ${escHtml(efAcc.name)}`:'尚未連結帳戶'}</div>
   </div>`;
 
-  const dfCard=`<div class="card" style="background:var(--surface);border-color:var(--border)">
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0">
-        <div style="font-size:clamp(16px,4.5vw,22px);font-weight:900;color:#7A4848;white-space:nowrap">夢想基金</div>
-        ${df.wish?`<span style="font-size:clamp(14px,4vw,22px);font-weight:700;color:#8B1A1A;background:rgba(139,26,26,0.1);padding:2px 12px;border-radius:8px;white-space:nowrap">${escHtml(df.wish)}</span>`:''}
-      </div>
-      <button class="icon-btn edit" data-a="editDF" style="flex-shrink:0">···</button>
-    </div>
-    <div class="ef-bal" style="color:${(dfBal||0)>=0?'var(--income)':'var(--expense)'}">$${fmt(dfBal||0)}</div>
-    <div class="ef-bar-wrap">
-      <div class="bar-bg" style="height:6px">
-        <div class="bar-fill ok" style="width:${dfPct||0}%"></div>
-      </div>
-      <div style="font-size:11px;color:var(--text2);margin-top:3px">
-        ${df.target>0?`${dfPct||0}% · 目標 $${fmt(df.target)}`:'尚未設定目標'}
-      </div>
-    </div>
-    <div class="ef-hint" style="margin-top:4px">${dfAcc?`${dfAcc.icon} ${escHtml(dfAcc.name)}`:'尚未連結帳戶'}</div>
-  </div>`;
+  const dfCard=renderDreamFundCard();
 
   const dayE=dayTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const dayI=dayTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
@@ -583,7 +812,8 @@ function renderAssetsView(){
 }
 
 // ── RENDER: CALENDAR ───────────────────────────────────────────────────────
-function renderCalView(){
+function renderCalView(opts){
+  const compact=opts&&opts.compact;
   const{y,m}=state.calMonth;
   const first=new Date(y,m,1).getDay();
   const days=new Date(y,m+1,0).getDate();
@@ -606,12 +836,19 @@ function renderCalView(){
       <span class="cda">${amtStr}</span>
     </div>`;
   }
-  return`<div class="hdr"><div class="hdr-in">
-    <div class="cal-nav">
+  const navBlock=`<div class="cal-nav">
       <button class="cal-nb" data-a="cprev">‹</button>
       <span class="cal-title-text" style="flex:1;text-align:center">${y}年${MONTHS[m]}</span>
       <button class="cal-nb" data-a="cnext">›</button>
-    </div>
+    </div>`;
+  const gridBlock=`<div class="weekdays">${['日','一','二','三','四','五','六'].map(d=>`<div class="wday">${d}</div>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>`;
+  if(compact){
+    return`<div class="hdr"><div class="hdr-in" style="min-height:auto;padding:16px 18px">${navBlock}</div></div>
+    <div class="card cal-compact-grid">${gridBlock}</div>`;
+  }
+  return`<div class="hdr"><div class="hdr-in">
+    ${navBlock}
     <div class="sum-bar">
       <div class="sum-item"><div class="lbl">收入</div><div class="val">$${fmt(sum.income)}</div></div>
       <div class="sum-item"><div class="lbl">支出</div><div class="val">$${fmt(sum.expense)}</div></div>
@@ -621,10 +858,7 @@ function renderCalView(){
     </div>
   </div></div>
   <div class="content">
-    <div class="card">
-      <div class="weekdays">${['日','一','二','三','四','五','六'].map(d=>`<div class="wday">${d}</div>`).join('')}</div>
-      <div class="cal-grid">${cells}</div>
-    </div>
+    <div class="card">${gridBlock}</div>
     ${sum.expense>0?`<div class="card" style="margin-top:12px">
       <div class="card-title">本月必要 vs 想要</div>
       <div class="donut-wrap">
@@ -1044,7 +1278,6 @@ function renderSettingsView(){
 
   if(state.settingsTab==='books')return renderBooksView();
   if(state.settingsTab==='acctypes')return renderAccTypesView();
-  if(state.settingsTab==='theme')return renderThemeView();
 
   if(state.settingsTab==='reset'){
     return`<div class="hdr"><div class="hdr-in">
@@ -1148,9 +1381,6 @@ function renderSettingsView(){
       {id:'currency',ico:'💱',name:'幣別管理'},
     ],
     [
-      {id:'theme',ico:'🎨',name:'主題風格'},
-    ],
-    [
       {id:'export',ico:'📤',name:'匯出資料'},
       {id:'backup',ico:'📦',name:'手動備份'},
       {id:'reset',ico:'🗑️',name:'重設記帳'},
@@ -1177,8 +1407,36 @@ function renderSettingsView(){
   </div>`;
 }
 
+// ── RENDER: WORKSPACE SETTINGS ───────────────────────────────────────────────
+function renderWorkspaceSettingsModule(){
+  const hidden=state.homeHiddenCards||[];
+  const homeCards=[
+    {id:'reminders',lbl:'七天內提醒'},
+    {id:'dream',lbl:'夢想清單'},
+    {id:'goals',lbl:'目標設定'},
+    {id:'project',lbl:'專案排程'},
+    {id:'todo',lbl:'代辦清單'},
+  ];
+  return`<div class="content">
+    <div class="dash-greet">
+      <h1>設定</h1>
+      <div class="dash-date">管理首頁顯示內容與主題風格</div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:6px">首頁顯示項目</div>
+      ${homeCards.map(c=>{
+        const shown=!hidden.includes(c.id);
+        return`<div class="setting-row">
+          <div class="setting-info"><div class="setting-name">${c.lbl}</div></div>
+          <button class="chip${shown?' ac':''}" data-a="toggleHomeCard" data-v="${c.id}">${shown?'✓ 顯示中':'已隱藏'}</button>
+        </div>`;
+      }).join('')}
+    </div>
+    ${renderThemePickerCards()}
+  </div>`;
+}
 // ── RENDER: THEME ──────────────────────────────────────────────────────────
-function renderThemeView(){
+function renderThemePickerCards(){
   const cur=state.theme||'pink';
   const curF=state.fontStyle||'huninn';
   const themeCards=Object.entries(THEMES).map(([id,t])=>{
@@ -1210,22 +1468,14 @@ function renderThemeView(){
       ${id!=='system'?`<button data-a="deleteFont" data-v="${id}" style="flex-shrink:0;width:36px;height:36px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">🗑️</button>`:''}
     </div>`;
   }).join('');
-  return`<div class="hdr"><div class="hdr-in">
-    <div class="hdr-row">
-      <div><h1>主題風格</h1></div>
-      <button class="back-btn" data-a="stab" data-v="main">返回</button>
-    </div>
-  </div></div>
-  <div class="content">
-    <div class="card" style="margin-bottom:12px">
+  return`<div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:14px">主題色調</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${themeCards}</div>
     </div>
     <div class="card">
       <div class="card-title" style="margin-bottom:14px">字型</div>
       ${fontCards}
-    </div>
-  </div>`;
+    </div>`;
 }
 
 // ── RENDER: BOOKS ──────────────────────────────────────────────────────────
@@ -1590,6 +1840,7 @@ function renderEditEFModal(){
 
 function renderEditDFModal(){
   const f=state.editForm;
+  const dreamGoals=(state.goals||[]).filter(g=>g.type==='dream');
   return`<div class="overlay" id="modal-overlay"><div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">🌟 設定夢想基金</div>
@@ -1605,6 +1856,14 @@ function renderEditDFModal(){
           style="--acc-c:${acc.color}" data-a="df-acc" data-v="${acc.id}">${acc.icon} ${escHtml(acc.name)}</button>`
       ).join('')}
     </div>
+    <div class="slabel">連結夢想任務（目標設定裡的夢想項目）</div>
+    <div class="acc-row" style="margin-bottom:8px;flex-wrap:wrap">
+      <button class="acc-pill${!f.linkedGoalId?' active':''}" data-a="df-goal" data-v="">不連結</button>
+      ${dreamGoals.map(g=>
+        `<button class="acc-pill${f.linkedGoalId===g.id?' active':''}" data-a="df-goal" data-v="${g.id}">🌟 ${escHtml(g.name)}</button>`
+      ).join('')}
+    </div>
+    ${!dreamGoals.length?`<div style="font-size:12px;color:var(--text2);margin-bottom:14px">尚無夢想項目，可到「目標設定」新增一個夢想後再回來連結</div>`:''}
     <div class="modal-btns">
       <button class="save-btn green" data-a="saveDF">儲存</button>
       <button class="outline-btn" data-a="closeModal">取消</button>
