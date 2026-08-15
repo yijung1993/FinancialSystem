@@ -20,6 +20,7 @@ function dmSel(sel,v,cls='sel'){document.querySelectorAll(sel).forEach(b=>b.clas
 const MODULES=[
   {id:'home',lbl:'首頁',module:'home'},
   {id:'finance',lbl:'財務',module:'finance',view:'add'},
+  {id:'insurance',lbl:'保險',module:'insurance'},
   {id:'todo',lbl:'代辦清單',module:'todo'},
   {id:'project',lbl:'專案排程',module:'project'},
   {id:'goals',lbl:'目標設定',module:'goals'},
@@ -50,6 +51,7 @@ function renderApp(){
 }
 function renderModuleBody(){
   if(state.module==='finance')return`<div class="finance-module">${renderTopBar()+renderView()+renderBottomNav()}</div>`;
+  if(state.module==='insurance')return renderInsView();
   if(state.module==='home')return renderHomeModule();
   if(state.module==='todo')return renderPlaceholderModule('✅','代辦清單');
   if(state.module==='project')return renderPlaceholderModule('📋','專案排程');
@@ -303,7 +305,7 @@ function renderBottomNav(){
   const tabs=[{id:'add',img:'home',lbl:'首頁'},{id:'calendar',img:'calendar',lbl:'行事曆'},
     {id:'assets',img:'assets',lbl:'資產'},{id:'stats',img:'stats',lbl:'統計'},
     {id:'settings',img:'settings',lbl:'設定'}];
-  const activeView=(['history'].includes(state.view)?'stats':['insurance'].includes(state.view)?'assets':state.view);
+  const activeView=(['history'].includes(state.view)?'stats':state.view);
   return`<nav class="bottom-nav">${tabs.map(t=>
     `<button class="nav-btn${activeView===t.id?' active':''}" data-nav="${t.id}">
       <span class="nav-ico"><img src="icons/${t.img}.png" width="22" height="22"></span>
@@ -343,7 +345,6 @@ function renderView(){
     case'accounts':return renderAssetsView();
     case'stats':return renderStatsView();
     case'history':state.view='stats';state.statsView='history';return renderStatsView();
-    case'insurance':state.view='assets';state.assetsTab='insurance';return renderAssetsView();
     case'settings':return renderSettingsView();
   }return'';
 }
@@ -713,8 +714,8 @@ function renderAssetsView(){
   const ccDebt=acsBal.filter(x=>x.b<0).reduce((s,x)=>s+Math.abs(x.b),0);
   const loanDebt=state.loans.reduce((s,l)=>s+(l.remainingAmount||0),0);
   const netWorth=totalAssets-ccDebt-loanDebt;
-  const tab=(state.assetsTab==='fixed'?'accounts':state.assetsTab)||'accounts';
-  const subTabs=[{id:'accounts',lbl:'帳戶'},{id:'loans',lbl:'貸款'},{id:'insurance',lbl:'保險'}];
+  const tab=(['fixed','insurance'].includes(state.assetsTab)?'accounts':state.assetsTab)||'accounts';
+  const subTabs=[{id:'accounts',lbl:'帳戶'},{id:'loans',lbl:'貸款'}];
   let content='';
   if(tab==='accounts'){
     const types=state.accTypes||DEFAULT_ACC_TYPES;
@@ -782,16 +783,6 @@ function renderAssetsView(){
       <div><div style="font-size:11px;color:var(--text2);font-weight:700">每月還款</div><div style="font-size:22px;font-weight:800">$${fmt(totalMonthly)}</div></div>
     </div>`:''}
     ${loanCards||`<div class="empty" style="padding:40px 20px"><div class="ei" style="font-size:36px">🏦</div><p>尚無貸款記錄</p></div>`}`;
-  } else if(tab==='insurance'){
-    const total=state.insurances.reduce((s,ins)=>s+insYearlyPremium(ins),0);
-    const active=state.insurances.filter(ins=>insStatus(ins).cls==='active').length;
-    content=`<button class="add-fab" data-a="newIns" style="margin-bottom:12px">＋ 新增保單</button>
-    <div class="card" style="background:linear-gradient(135deg,#E8EEF8,#EEF4FF);border-color:#C8D8F0;margin-bottom:12px;display:flex;gap:24px;align-items:center">
-      <div><div style="font-size:11px;color:var(--text2);font-weight:700">保單數量</div><div style="font-size:20px;font-weight:800">${state.insurances.length} 張<span style="font-size:12px;color:var(--text2);font-weight:600;margin-left:4px">${active} 張生效中</span></div></div>
-      <div style="margin-left:auto;display:flex;gap:8px">
-        <button class="outline-btn" style="font-size:12px;padding:6px 10px" data-a="importIns">📥 匯入</button>
-      </div>
-    </div>`+renderInsBodyHtml();
   }
   return`<div class="hdr"><div class="hdr-in">
     <h1>家庭淨資產</h1>
@@ -2158,7 +2149,7 @@ function renderInsView(){
   const hdr=`<div class="hdr ins-hdr">
     <div class="hdr-in">
       <div class="hdr-row">
-        <div><h1>🛡️ 保險管理</h1>
+        <div><h1>保險管理</h1>
         <div class="sub">共 ${state.insurances.length} 張保單・${active} 張生效中</div></div>
         <button class="outline-btn" style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.5);color:white;font-size:13px;flex-shrink:0" data-a="importIns">📥 匯入 Excel</button>
       </div>

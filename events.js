@@ -67,7 +67,7 @@ function attachInputs(){
       backupInput.value='';
     });
   }
-  if(state.view==='insurance')initInsDragSort();
+  initInsDragSort();
   initModuleDragSort();
 }
 function initModuleDragSort(){
