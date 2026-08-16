@@ -109,6 +109,7 @@ let state={
   dreamFund:load('budget_df',{accountId:null,target:0,wish:'',linkedGoalId:null}),
   goals:load('budget_goals',[]),
   goalTypeFilter:'all',
+  homeCardTab:'reminders',
   moduleOrder:load('budget_module_order',null),
   homeHiddenCards:load('budget_home_hidden_cards',[]),
   accHideBalance:load('budget_hide_bal',false),

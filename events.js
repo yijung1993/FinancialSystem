@@ -639,6 +639,7 @@ document.addEventListener('click',e=>{
       saveGoal();break;}
     case'delGoal':deleteGoal(v);break;
     case'goalTypeFilt':state.goalTypeFilter=v;renderApp();break;
+    case'homeCardTab':state.homeCardTab=v;renderApp();break;
     case'toggleGoalTask':toggleGoalTask(el.dataset.id,v);break;
     case'delGoalTask':deleteGoalTask(el.dataset.id,v);break;
     case'addGoalTask':{

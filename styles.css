@@ -66,6 +66,8 @@ body{font-family:var(--font-family);
 .home-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;align-items:start}
 .home-col-left,.home-col-right{display:flex;flex-direction:column;gap:12px}
 .home-col-left>.card,.home-col-right>.card{margin-bottom:0}
+.home-tabs-mobile{display:none}
+.home-tab-chips{margin-bottom:12px}
 .home-feature-card{display:flex;flex-direction:column;height:170px}
 .home-feature-card.hf-clickable{cursor:pointer}
 .hf-title{font-size:17px;font-weight:800;color:var(--text);margin-bottom:10px}
@@ -551,6 +553,9 @@ body[data-font="dandan"] .hdr h1{font-size:25px}
   .hub-bar{display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;
     background:var(--surface);border-bottom:1.5px solid var(--border);
     position:sticky;top:0;z-index:90}
+  /* 手機版首頁：右側卡片改用頁籤顯示，不用並排兩欄（會被壓縮） */
+  .home-2col{display:none}
+  .home-tabs-mobile{display:block}
 }
 /* desktop */
 @media(min-width:768px){

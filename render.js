@@ -152,15 +152,25 @@ function renderHomeModule(){
   const n=new Date();
   const wd=['日','一','二','三','四','五','六'][n.getDay()];
   const hidden=state.homeHiddenCards||[];
-  const cards={
-    reminders:renderRemindersCard,
-    dream:renderDreamTeaserCard,
-    goals:renderGoalsTeaserCard,
-    project:renderProjectTeaserCard,
-    todo:renderTodoTeaserCard,
-  };
-  const leftHtml=(hidden.includes('reminders')?'':cards.reminders())+renderCalView({compact:true});
-  const rightHtml=['todo','dream','goals','project'].filter(id=>!hidden.includes(id)).map(id=>cards[id]()).join('');
+  const tabDefs=[
+    {id:'reminders',lbl:'七天內提醒',render:renderRemindersCard},
+    {id:'todo',lbl:'代辦清單',render:renderTodoTeaserCard},
+    {id:'dream',lbl:'夢想清單',render:renderDreamTeaserCard},
+    {id:'goals',lbl:'目標設定',render:renderGoalsTeaserCard},
+    {id:'project',lbl:'專案排程',render:renderProjectTeaserCard},
+  ].filter(t=>!hidden.includes(t.id));
+  let active=state.homeCardTab||'reminders';
+  if(!tabDefs.find(t=>t.id===active))active=tabDefs.length?tabDefs[0].id:'reminders';
+  state.homeCardTab=active;
+  const activeDef=tabDefs.find(t=>t.id===active);
+  // 電腦版（寬螢幕）：原本並排兩欄，四張卡片同時顯示
+  const leftHtml=(hidden.includes('reminders')?'':renderRemindersCard())+renderCalView({compact:true});
+  const rightHtml=tabDefs.filter(t=>t.id!=='reminders').map(t=>t.render()).join('');
+  // 手機版（窄螢幕）：合併成頁籤，一次只顯示選中的卡片內容
+  const tabBar=tabDefs.length?`<div class="chips home-tab-chips">${tabDefs.map(t=>
+    `<button class="chip${t.id===active?' ac':''}" data-a="homeCardTab" data-v="${t.id}">${t.lbl}</button>`
+  ).join('')}</div>`:'';
+  const mobileHtml=`${tabBar}${activeDef?activeDef.render():''}${renderCalView({compact:true})}`;
   return`<div class="content content-fluid">
     <div class="dash-greet">
       <h1>${greetingText()} 👋</h1>
@@ -170,6 +180,7 @@ function renderHomeModule(){
       <div class="home-col-left">${leftHtml}</div>
       <div class="home-col-right">${rightHtml}</div>
     </div>
+    <div class="home-tabs-mobile">${mobileHtml}</div>
   </div>`;
 }
 function renderPlaceholderModule(emoji,lbl){
