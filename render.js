@@ -53,13 +53,13 @@ function renderModuleBody(){
   if(state.module==='finance')return`<div class="finance-module">${renderTopBar()+renderView()+renderBottomNav()}</div>`;
   if(state.module==='insurance')return renderInsView();
   if(state.module==='home')return renderHomeModule();
-  if(state.module==='todo')return renderPlaceholderModule('✅','代辦清單');
-  if(state.module==='project')return renderPlaceholderModule('📋','專案排程');
-  if(state.module==='goals')return renderGoalsModule();
-  if(state.module==='habit')return renderPlaceholderModule('🌱','習慣養成');
-  if(state.module==='gratitude')return renderPlaceholderModule('🙏','感恩日記');
-  if(state.module==='cycle')return renderPlaceholderModule('🌸','月經週期');
-  if(state.module==='settings')return renderWorkspaceSettingsModule();
+  if(state.module==='todo')return`<div class="feature-module">${renderPlaceholderModule('✅','代辦清單')}</div>`;
+  if(state.module==='project')return`<div class="feature-module">${renderPlaceholderModule('📋','專案排程')}</div>`;
+  if(state.module==='goals')return`<div class="feature-module">${renderGoalsModule()}</div>`;
+  if(state.module==='habit')return`<div class="feature-module">${renderPlaceholderModule('🌱','習慣養成')}</div>`;
+  if(state.module==='gratitude')return`<div class="feature-module">${renderGratitudeModule()}</div>`;
+  if(state.module==='cycle')return`<div class="feature-module">${renderPlaceholderModule('🌸','月經週期')}</div>`;
+  if(state.module==='settings')return`<div class="feature-module">${renderWorkspaceSettingsModule()}</div>`;
   return'';
 }
 function renderDreamFundCard(){
@@ -184,11 +184,11 @@ function renderHomeModule(){
   </div>`;
 }
 function renderPlaceholderModule(emoji,lbl){
-  return`<div class="content">
-    <div class="dash-greet">
-      <h1>${lbl}</h1>
-      <div class="dash-date">這個模組正在規劃中</div>
-    </div>
+  return`<div class="hdr"><div class="hdr-in">
+    <h1>${lbl}</h1>
+    <div class="sub">這個模組正在規劃中</div>
+  </div></div>
+  <div class="content" style="padding-top:12px">
     <div class="empty">
       <div class="ei">${emoji}</div>
       <p>${lbl}功能即將推出，敬請期待</p>
@@ -201,11 +201,11 @@ function renderGoalsModule(){
   const filter=state.goalTypeFilter||'all';
   const filtered=filter==='all'?goals:goals.filter(g=>g.type===filter);
   const tabs=[{id:'all',lbl:'全部'},{id:'goal',lbl:'🎯 目標'},{id:'dream',lbl:'🌟 夢想'}];
-  return`<div class="content">
-    <div class="dash-greet">
-      <h1>目標設定</h1>
-      <div class="dash-date">寫下你的目標或夢想，拆解成小任務一步步達成</div>
-    </div>
+  return`<div class="hdr"><div class="hdr-in">
+    <h1>目標設定</h1>
+    <div class="sub">寫下你的目標或夢想，拆解成小任務一步步達成</div>
+  </div></div>
+  <div class="content" style="padding-top:12px">
     <button class="save-btn" data-a="newGoal" style="margin-bottom:14px">＋ 新增目標／夢想</button>
     <div class="chips">${tabs.map(t=>
       `<button class="chip${filter===t.id?' ac':''}" data-a="goalTypeFilt" data-v="${t.id}">${t.lbl}</button>`
@@ -265,6 +265,49 @@ function renderEditGoalModal(){
       <button class="outline-btn" data-a="closeModal">取消</button>
     </div>
     ${f.goalId?`<button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delGoal" data-v="${f.goalId}">🗑 刪除</button>`:''}
+  </div></div>`;
+}
+// ── RENDER: GRATITUDE JOURNAL ────────────────────────────────────────────────
+function renderGratitudeModule(){
+  const{y,m}=state.gratMonth;
+  const entries=state.gratitude
+    .filter(g=>{const d=new Date(g.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m;})
+    .sort((a,b)=>a.date<b.date?-1:1);
+  return`<div class="hdr"><div class="hdr-in">
+    <h1>感恩日記</h1>
+    <div class="sub">寫下每天值得感恩的小事</div>
+  </div></div>
+  <div class="content" style="padding-top:12px">
+    <button class="save-btn" data-a="newGrat" style="margin-bottom:14px">＋ 新增感恩</button>
+    <div class="grat-month-nav">
+      <div class="cal-nav">
+        <button class="cal-nb" data-a="gprev">‹</button>
+        <span class="cal-title-text" style="flex:1;text-align:center">${y}年${MONTHS[m]}</span>
+        <button class="cal-nb" data-a="gnext">›</button>
+      </div>
+    </div>
+    ${entries.length?`<div class="grat-grid">${entries.map(g=>renderGratTile(g)).join('')}</div>`:`
+      <div class="empty"><div class="ei">🙏</div><p>這個月還沒有感恩紀錄，點上面按鈕新增一篇吧</p></div>`}
+  </div>`;
+}
+function renderGratTile(g){
+  const d=new Date(g.date+'T00:00:00');
+  return`<div class="grat-tile" data-a="editGrat" data-v="${g.id}" title="${escHtml(g.text)}">${d.getDate()}</div>`;
+}
+function renderEditGratModal(){
+  const f=state.editForm;
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${f.gratId?'編輯感恩日記':'新增感恩日記'}</div>
+    <div class="form-field" style="margin-bottom:14px"><label>日期</label>
+      <input class="form-input" id="ef-gratdate" type="date" value="${f.gratDate||todayStr()}"></div>
+    <div class="form-field" style="margin-bottom:14px"><label>今天要感恩的事</label>
+      <textarea class="form-input" id="ef-grattext" rows="4" placeholder="寫下今天值得感謝的人事物…">${escHtml(f.gratText||'')}</textarea></div>
+    <div class="modal-btns">
+      <button class="save-btn" data-a="saveGratBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
+    ${f.gratId?`<button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delGrat" data-v="${f.gratId}">🗑 刪除</button>`:''}
   </div></div>`;
 }
 function renderMobileHubBar(){
@@ -346,6 +389,7 @@ function renderModal(){
   if(type==='joinRoom')return renderJoinRoomModal();
   if(type==='moduleMenu')return renderModuleMenuModal();
   if(type==='editGoal')return renderEditGoalModal();
+  if(type==='editGrat')return renderEditGratModal();
   return'';
 }
 function renderView(){
@@ -1411,6 +1455,28 @@ function renderSettingsView(){
 
 // ── RENDER: WORKSPACE SETTINGS ───────────────────────────────────────────────
 function renderWorkspaceSettingsModule(){
+  const tab=state.wsSettingsTab||'main';
+  if(tab==='cards')return renderWsCardsTab();
+  if(tab==='theme')return renderWsThemeTab();
+  const menu=[
+    {id:'cards',ico:'🗂️',name:'卡片顯示'},
+    {id:'theme',ico:'🎨',name:'風格主題'},
+  ];
+  return`<div class="content">
+    <div class="dash-greet">
+      <h1>設定</h1>
+      <div class="dash-date">管理首頁顯示內容與主題風格</div>
+    </div>
+    <div class="card">
+      ${menu.map(item=>`<div class="setting-row" style="cursor:pointer;padding:9px 0" data-a="wsTab" data-v="${item.id}">
+        <div class="setting-ico" style="width:38px;height:38px;border-radius:11px;background:var(--bg);border:1px solid var(--border)">${item.ico}</div>
+        <div class="setting-info"><div class="setting-name">${item.name}</div></div>
+        <span style="color:var(--text2);font-size:20px;padding-right:2px">›</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+function renderWsCardsTab(){
   const hidden=state.homeHiddenCards||[];
   const homeCards=[
     {id:'reminders',lbl:'七天內提醒'},
@@ -1419,12 +1485,14 @@ function renderWorkspaceSettingsModule(){
     {id:'project',lbl:'專案排程'},
     {id:'todo',lbl:'代辦清單'},
   ];
-  return`<div class="content">
-    <div class="dash-greet">
-      <h1>設定</h1>
-      <div class="dash-date">管理首頁顯示內容與主題風格</div>
+  return`<div class="hdr"><div class="hdr-in">
+    <div class="hdr-row">
+      <div><h1>卡片顯示</h1></div>
+      <button class="back-btn" data-a="wsTab" data-v="main">返回</button>
     </div>
-    <div class="card" style="margin-bottom:12px">
+  </div></div>
+  <div class="content" style="padding-top:12px">
+    <div class="card">
       <div class="card-title" style="margin-bottom:6px">首頁顯示項目</div>
       ${homeCards.map(c=>{
         const shown=!hidden.includes(c.id);
@@ -1434,6 +1502,16 @@ function renderWorkspaceSettingsModule(){
         </div>`;
       }).join('')}
     </div>
+  </div>`;
+}
+function renderWsThemeTab(){
+  return`<div class="hdr"><div class="hdr-in">
+    <div class="hdr-row">
+      <div><h1>風格主題</h1></div>
+      <button class="back-btn" data-a="wsTab" data-v="main">返回</button>
+    </div>
+  </div></div>
+  <div class="content" style="padding-top:12px">
     ${renderThemePickerCards()}
   </div>`;
 }

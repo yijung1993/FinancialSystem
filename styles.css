@@ -33,7 +33,7 @@ body{font-family:var(--font-family);
   background:var(--surface);border:1px solid var(--border);box-shadow:0 2px 14px var(--shadow);
   padding:20px 14px;overflow-y:auto;z-index:80}
 .sb-title-row{display:flex;align-items:center;justify-content:space-between;padding:4px 10px 16px}
-.sb-title{font-size:14px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.sb-title{font-size:19px;font-weight:900;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
 .snb{display:flex;flex-direction:column;gap:3px}
 .snb-btn{display:flex;flex-direction:row;align-items:center;justify-content:space-between;
   gap:12px;cursor:pointer;border:none;background:transparent;
@@ -98,6 +98,12 @@ body{font-family:var(--font-family);
 .goal-task-text.done{text-decoration:line-through;color:var(--text2)}
 .goal-task-del{color:var(--text2);font-size:13px;padding:2px 6px;cursor:pointer;flex-shrink:0}
 .goal-add-task{display:flex;gap:6px;margin-top:8px}
+.grat-month-nav{background:var(--hdr-grad);border-radius:var(--r);padding:14px 18px;margin-bottom:14px}
+.grat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.grat-tile{aspect-ratio:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;
+  color:var(--text);cursor:pointer;box-shadow:0 2px 8px var(--shadow);-webkit-tap-highlight-color:transparent}
+.grat-tile:active{transform:scale(.94)}
 .goal-add-task input{flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;
   font-size:13px;background:var(--bg);color:var(--text);font-family:inherit}
 .goal-add-task button{padding:7px 12px;border-radius:8px;border:none;background:var(--p);
@@ -134,6 +140,11 @@ body{font-family:var(--font-family);
 .finance-module .content,.finance-module .hdr-in{max-width:none}
 .finance-module .hdr{margin-left:0;margin-right:0;margin-bottom:14px}
 .finance-module .content{padding-left:0;padding-right:0}
+/* 其他功能頁（代辦/專案/目標/感恩/習慣/週期）：粉紅卡片與下方內容同寬，跟財務頁一致 */
+.feature-module{padding-left:16px;padding-right:16px}
+.feature-module .content,.feature-module .hdr-in{max-width:none}
+.feature-module .hdr{margin-left:0;margin-right:0;margin-bottom:14px}
+.feature-module .content{padding-left:0;padding-right:0}
 
 /* content & card */
 .content{padding:14px 16px calc(var(--nb)+20px + env(safe-area-inset-bottom,0px))}
@@ -206,6 +217,7 @@ body{font-family:var(--font-family);
   font-size:15px;outline:none;background:var(--bg);color:var(--text);
   font-family:inherit;transition:border-color .2s}
 .form-input:focus{border-color:var(--p);background:var(--bg)}
+textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 input[type="date"].form-input{accent-color:var(--p);color-scheme:light;min-width:0;max-width:100%;display:block;width:100%}
 input[type="date"].form-input::-webkit-calendar-picker-indicator{opacity:.6;cursor:pointer;max-width:20px;flex-shrink:0}
 .emoji-grid{display:flex;flex-wrap:wrap;gap:4px;max-height:140px;overflow-y:auto;
@@ -566,6 +578,8 @@ body[data-font="dandan"] .hdr h1{font-size:25px}
   .sidebar{display:flex;flex-direction:column}
   .bottom-nav{left:calc(50% + var(--sbreserve)/2)}
   .finance-module{padding-left:28px;padding-right:28px}
+  .feature-module{padding-left:28px;padding-right:28px}
+  .grat-grid{grid-template-columns:repeat(7,1fr)}
   .hdr{margin:24px 28px 0}
   .cal-compact-grid{margin:12px 28px 0}
   .hdr-in{padding:28px 28px 20px;min-height:170px}
@@ -583,6 +597,7 @@ body[data-font="dandan"] .hdr h1{font-size:25px}
   .fab{right:max(18px,calc((100vw - 440px - var(--sbreserve)) / 2 + 18px))}
 }
 @media(max-width:430px){
+  .grat-grid{grid-template-columns:repeat(4,1fr)}
   /* 全站內文統一 14px */
   body{font-size:14px}
   .form-input,.acc-pill,.subcat-btn,.type-btn,.save-btn,.outline-btn,

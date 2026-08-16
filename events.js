@@ -195,6 +195,7 @@ document.addEventListener('click',e=>{
   const modEl=e.target.closest('[data-module]');
   if(modEl){
     state.module=modEl.dataset.module;
+    if(state.module==='settings')state.wsSettingsTab='main';
     if(modEl.dataset.view){state.view=modEl.dataset.view;if(modEl.dataset.view==='settings')state.settingsTab=modEl.dataset.settingsTab||'main';}
     state.modal=null;window.scrollTo(0,0);renderApp();return;
   }
@@ -640,12 +641,29 @@ document.addEventListener('click',e=>{
     case'delGoal':deleteGoal(v);break;
     case'goalTypeFilt':state.goalTypeFilter=v;renderApp();break;
     case'homeCardTab':state.homeCardTab=v;renderApp();break;
+    case'gprev':
+      if(state.gratMonth.m===0){state.gratMonth.y--;state.gratMonth.m=11;}else state.gratMonth.m--;
+      renderApp();break;
+    case'gnext':
+      if(state.gratMonth.m===11){state.gratMonth.y++;state.gratMonth.m=0;}else state.gratMonth.m++;
+      renderApp();break;
+    case'newGrat':state.editForm={gratDate:todayStr(),gratText:''};state.modal={type:'editGrat'};renderApp();break;
+    case'editGrat':{const g=state.gratitude.find(x=>x.id===v);
+      if(g)state.editForm={gratId:g.id,gratDate:g.date,gratText:g.text};
+      state.modal={type:'editGrat'};renderApp();break;}
+    case'saveGratBtn':{
+      const dEl=document.getElementById('ef-gratdate'),tEl=document.getElementById('ef-grattext');
+      if(dEl)state.editForm.gratDate=dEl.value;
+      if(tEl)state.editForm.gratText=tEl.value;
+      saveGratitude();break;}
+    case'delGrat':deleteGratitude(v);break;
     case'toggleGoalTask':toggleGoalTask(el.dataset.id,v);break;
     case'delGoalTask':deleteGoalTask(el.dataset.id,v);break;
     case'addGoalTask':{
       const inp=document.getElementById('newtask-'+v);
       addGoalTask(v,inp?inp.value:'');break;}
     case'toggleGoalAchieved':toggleGoalAchieved(v);break;
+    case'wsTab':state.wsSettingsTab=v;renderApp();break;
     case'toggleHomeCard':{
       const hidden=state.homeHiddenCards||(state.homeHiddenCards=[]);
       const i=hidden.indexOf(v);
