@@ -28,6 +28,40 @@
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 applyAppTheme();
 renderApp();
+// ── 新版偵測：比對核心檔案版本，有更新就跳出提示，點一下清快取並重載 ──
+(function(){
+  if(!/^https?:/.test(location.protocol))return; // 本機 file:// 不需要
+  var FILES=['render.js','styles.css','events.js','actions.js','state.js','helpers.js','sync.js'];
+  var base=null,shown=false;
+  function sig(){
+    return Promise.all(FILES.map(function(f){
+      return fetch(f+'?t='+Date.now(),{method:'HEAD',cache:'no-store'})
+        .then(function(r){return r.headers.get('etag')||r.headers.get('last-modified')||'';})
+        .catch(function(){return'';});
+    })).then(function(a){return a.join('|');});
+  }
+  function bar(){
+    if(shown)return;shown=true;
+    var d=document.createElement('div');
+    d.textContent='🔄 有新版本，點一下更新';
+    d.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99999;'
+      +'background:#3A2E24;color:#fff;padding:12px 22px;border-radius:999px;font-family:inherit;'
+      +'font-size:14px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,.3);cursor:pointer';
+    d.onclick=function(){
+      d.textContent='更新中…';
+      var go=function(){location.reload();};
+      if(window.caches&&caches.keys)caches.keys()
+        .then(function(k){return Promise.all(k.map(function(x){return caches.delete(x);}));})
+        .then(go,go);
+      else go();
+    };
+    document.body.appendChild(d);
+  }
+  sig().then(function(s){base=s;});
+  function check(){if(base&&!shown)sig().then(function(s){if(s&&s!==base)bar();});}
+  setInterval(check,120000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});
+})();
 </script>
 </body>
 </html>
