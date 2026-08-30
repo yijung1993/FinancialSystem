@@ -9,6 +9,10 @@ function attachInputs(){
   bind('ef-note',v=>{state.editForm.note=v});
   bind('ef-name',v=>{state.editForm.name=v});
   bind('ef-icon',v=>{state.editForm.icon=v});
+  bind('ef-habitname',v=>{state.editForm.habitName=v});
+  bind('ef-daynote',v=>{state.editForm.dayNote=v});
+  bind('ef-cyclestart',v=>{state.editForm.cycleStart=v});
+  bind('ef-cycleend',v=>{state.editForm.cycleEnd=v});
   bind('ef-init',v=>{state.editForm.init=v});
   bind('ef-budget',v=>{state.editForm.budget=v});
   bind('ef-target',v=>{state.editForm.targetAmount=v});
@@ -648,6 +652,9 @@ document.addEventListener('click',e=>{
       if(state.gratMonth.m===11){state.gratMonth.y++;state.gratMonth.m=0;}else state.gratMonth.m++;
       renderApp();break;
     case'newGrat':state.editForm={gratDate:todayStr(),gratText:''};state.modal={type:'editGrat'};renderApp();break;
+    case'gratDay':{const g=state.gratitude.find(x=>x.date===v);
+      state.editForm=g?{gratId:g.id,gratDate:g.date,gratText:g.text}:{gratDate:v,gratText:''};
+      state.modal={type:'editGrat'};renderApp();break;}
     case'editGrat':{const g=state.gratitude.find(x=>x.id===v);
       if(g)state.editForm={gratId:g.id,gratDate:g.date,gratText:g.text};
       state.modal={type:'editGrat'};renderApp();break;}
@@ -670,6 +677,116 @@ document.addEventListener('click',e=>{
       if(i>=0)hidden.splice(i,1);else hidden.push(v);
       save('budget_home_hidden_cards',hidden);
       renderApp();break;}
+    // ── HABITS ──
+    case'habitFilt':state.habitFilter=v;renderApp();break;
+    case'habitView':state.habitView=v;renderApp();break;
+    case'habitSelect':state.habitSelected=v;renderApp();break;
+    case'newHabit':state.editForm={habitFreqType:'daily',habitFreqTimes:3,icon:'✅',habitColor:ACC_COLORS[2]};state.modal={type:'editHabit'};renderApp();break;
+    case'editHabit':{const h=state.habits.find(x=>x.id===v);
+      if(h)state.editForm={habitId:h.id,habitName:h.name,icon:h.icon,habitColor:h.color,habitFreqType:h.freqType||'daily',habitFreqTimes:h.freqTimes||3,habitArchived:h.archived};
+      state.modal={type:'editHabit'};renderApp();break;}
+    case'archiveHabit':archiveHabit(v);break;
+    case'unarchiveHabit':unarchiveHabit(v);break;
+    case'habitColor':state.editForm.habitColor=v;dmSel('[data-a="habitColor"]',v);break;
+    case'habitFreqType':state.editForm.habitFreqType=v;renderModalOnly();break;
+    case'saveHabitBtn':{
+      const n=document.getElementById('ef-habitname'),ic=document.getElementById('ef-icon'),tm=document.getElementById('ef-habittimes');
+      if(n)state.editForm.habitName=n.value;
+      if(ic)state.editForm.icon=ic.value;
+      if(tm)state.editForm.habitFreqTimes=tm.value;
+      saveHabit();break;}
+    case'delHabit':deleteHabit(v);break;
+    case'toggleHabit':toggleHabitDay(v,todayStr());break;
+    case'habitMonthPrev':
+      if(state.habitMonthYM.m===0){state.habitMonthYM.y--;state.habitMonthYM.m=11;}else state.habitMonthYM.m--;
+      renderApp();break;
+    case'habitMonthNext':
+      if(state.habitMonthYM.m===11){state.habitMonthYM.y++;state.habitMonthYM.m=0;}else state.habitMonthYM.m++;
+      renderApp();break;
+    case'toggleHabitDay':toggleHabitDay(state.habitSelected,v);break;
+    // ── PROJECT SCHEDULING ──
+    case'projectFilt':state.projectFilter=v;renderApp();break;
+    case'projectSelect':state.projectSelected=v;state.projectExpanded=v;renderApp();break;
+    case'projToggle':state.projectSelected=v;state.projectExpanded=state.projectExpanded===v?null:v;renderApp();break;
+    case'newProject':state.editForm={projStatus:'todo',projName:'',projNote:'',projStart:'',projEnd:''};state.modal={type:'editProject'};renderApp();break;
+    case'editProject':{const p=state.projects.find(x=>x.id===v);
+      if(p)state.editForm={projId:p.id,projName:p.name,projNote:p.note||'',projStatus:p.status||'todo',projStart:p.start||'',projEnd:p.end||''};
+      state.modal={type:'editProject'};renderApp();break;}
+    case'projStatusForm':state.editForm.projStatus=v;dmActive('[data-a="projStatusForm"]',v);break;
+    case'saveProjBtn':{
+      const n=document.getElementById('ef-projname'),nt=document.getElementById('ef-projnote'),
+        ps=document.getElementById('ef-projstart'),pe=document.getElementById('ef-projend');
+      if(n)state.editForm.projName=n.value;
+      if(nt)state.editForm.projNote=nt.value;
+      if(ps)state.editForm.projStart=ps.value;
+      if(pe)state.editForm.projEnd=pe.value;
+      saveProject();break;}
+    case'delProject':deleteProject(v);break;
+    case'projStatus':setProjectStatus(el.dataset.pid,v);break;
+    case'newPhase':{const p=state.projects.find(x=>x.id===v);const cnt=(p&&p.phases||[]).length;
+      state.editForm={phaseProjId:v,phaseName:'',phaseStart:(p&&p.start)||todayStr(),phaseEnd:'',phaseColor:ACC_COLORS[cnt%ACC_COLORS.length]};
+      state.modal={type:'editPhase'};renderApp();break;}
+    case'editPhase':{const pid=el.dataset.pid,p=state.projects.find(x=>x.id===pid);
+      const ph=p&&(p.phases||[]).find(x=>x.id===v);
+      if(ph)state.editForm={phaseProjId:pid,phaseId:ph.id,phaseName:ph.name,phaseStart:ph.start,phaseEnd:ph.end,phaseColor:ph.color||ACC_COLORS[0]};
+      state.modal={type:'editPhase'};renderApp();break;}
+    case'phaseColor':state.editForm.phaseColor=v;dmSel('[data-a="phaseColor"]',v);break;
+    case'savePhaseBtn':{
+      const n=document.getElementById('ef-phasename'),s=document.getElementById('ef-phasestart'),e=document.getElementById('ef-phaseend');
+      if(n)state.editForm.phaseName=n.value;
+      if(s)state.editForm.phaseStart=s.value;
+      if(e)state.editForm.phaseEnd=e.value;
+      savePhase();break;}
+    case'delPhase':deletePhase(el.dataset.pid,v);break;
+    case'addProjTask':{const inp=document.getElementById('newptask-'+v);addPhaseTask(el.dataset.pid,v,inp?inp.value:'');break;}
+    case'toggleProjTask':togglePhaseTask(el.dataset.pid,el.dataset.phid,v);break;
+    case'editTask':{const pid=el.dataset.pid,phid=el.dataset.phid;
+      const p=state.projects.find(x=>x.id===pid),ph=p&&(p.phases||[]).find(x=>x.id===phid);
+      const t=ph&&(ph.tasks||[]).find(x=>x.id===v);
+      if(t)state.editForm={taskProjId:pid,taskPhaseId:phid,taskId:t.id,taskText:t.text,taskDue:t.due||''};
+      state.modal={type:'editTask'};renderApp();break;}
+    case'saveTaskBtn':{
+      const tx=document.getElementById('ef-tasktext'),du=document.getElementById('ef-taskdue');
+      if(tx)state.editForm.taskText=tx.value;
+      if(du)state.editForm.taskDue=du.value;
+      saveTask();break;}
+    case'delProjTask':deletePhaseTask(el.dataset.pid,el.dataset.phid,v);break;
+    // ── MENSTRUAL CYCLE ──
+    case'newCycle':state.editForm={cycleStart:todayStr(),cycleEnd:''};state.modal={type:'editCycle'};renderApp();break;
+    case'editCycleRec':{const c=state.cycles.find(x=>x.id===v);
+      if(c)state.editForm={cycleId:c.id,cycleStart:c.start,cycleEnd:c.end||''};
+      state.modal={type:'editCycle'};renderApp();break;}
+    case'saveCycleBtn':{
+      const s=document.getElementById('ef-cyclestart'),e=document.getElementById('ef-cycleend');
+      if(s)state.editForm.cycleStart=s.value;
+      if(e)state.editForm.cycleEnd=e.value;
+      saveCycleRec();break;}
+    case'delCycleRec':deleteCycleRec(v);break;
+    case'cyprev':
+      if(state.cycleMonth.m===0){state.cycleMonth.y--;state.cycleMonth.m=11;}else state.cycleMonth.m--;
+      renderApp();break;
+    case'cynext':
+      if(state.cycleMonth.m===11){state.cycleMonth.y++;state.cycleMonth.m=0;}else state.cycleMonth.m++;
+      renderApp();break;
+    case'openCycleDay':{const log=(state.cycleLogs||[]).find(l=>l.date===v)||{};
+      state.editForm={cycleDayDate:v,dayFlow:log.flow||null,dayMoods:[...(log.moods||[])],daySymptoms:[...(log.symptoms||[])],daySex:log.sex||null,dayNote:log.note||''};
+      state.modal={type:'cycleDay'};renderApp();break;}
+    case'cycleMarkStart':cycleMarkStart(v);break;
+    case'cycleMarkEnd':cycleMarkEnd(v);break;
+    case'dayFlow':state.editForm.dayFlow=state.editForm.dayFlow===v?null:v;renderModalOnly();break;
+    case'daySex':state.editForm.daySex=state.editForm.daySex===v?null:v;renderModalOnly();break;
+    case'dayMood':{const a=state.editForm.dayMoods||(state.editForm.dayMoods=[]);
+      const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);renderModalOnly();break;}
+    case'daySymptom':{const a=state.editForm.daySymptoms||(state.editForm.daySymptoms=[]);
+      const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);renderModalOnly();break;}
+    case'saveCycleDayBtn':{const t=document.getElementById('ef-daynote');if(t)state.editForm.dayNote=t.value;saveCycleDay();break;}
+    case'openCycleSettings':state.modal={type:'cycleSettings'};renderApp();break;
+    case'toggleCyclePredict':{
+      const on=!((state.cycleSettings||{}).showPredict!==false);
+      state.cycleSettings={...(state.cycleSettings||{}),showPredict:on};
+      save('budget_cycle_settings',state.cycleSettings);
+      el.classList.toggle('on',on);el.classList.toggle('off',!on);break;}
+    case'saveCycleSettingsBtn':saveCycleSettings();break;
   }
 });
 

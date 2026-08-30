@@ -184,7 +184,8 @@ function saveFixed(){
 const BACKUP_KEYS=['budget_txs','budget_accounts','budget_cats_exp','budget_cats_inc',
   'budget_ef','budget_nickname','budget_books','budget_active_book','budget_df',
   'budget_hide_bal','budget_loans','budget_fixed','budget_insurances',
-  'budget_ins_members','budget_acc_types','budget_mode','budget_goals'];
+  'budget_ins_members','budget_acc_types','budget_mode','budget_goals','budget_gratitude',
+  'budget_habits','budget_cycles','budget_cycle_logs','budget_cycle_settings','budget_projects'];
 function bufToB64(buf){
   const u8=new Uint8Array(buf);let s='';
   for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode(...u8.subarray(i,i+8192));
@@ -577,4 +578,331 @@ function toggleGoalAchieved(goalId){
   const g=state.goals.find(x=>x.id===goalId);if(!g)return;
   g.achieved=!g.achieved;
   save('budget_goals',state.goals);renderApp();
+}
+// ── GRATITUDE JOURNAL ────────────────────────────────────────────────────
+function saveGratitude(){
+  const f=state.editForm;
+  const text=(f.gratText||'').trim();
+  const date=f.gratDate||todayStr();
+  if(!text){showToast('請輸入內容');return;}
+  const dupe=state.gratitude.find(g=>g.date===date&&g.id!==f.gratId);
+  if(dupe){showToast('這天已經有一篇感恩日記了');return;}
+  if(f.gratId){
+    const i=state.gratitude.findIndex(g=>g.id===f.gratId);
+    if(i>=0)state.gratitude[i]={...state.gratitude[i],date,text};
+  }else{
+    state.gratitude.push({id:'grat_'+Date.now(),date,text});
+  }
+  save('budget_gratitude',state.gratitude);
+  state.modal=null;showToast('已儲存 ✓');renderApp();
+}
+function deleteGratitude(id){
+  if(!confirm('確定刪除這篇感恩日記？'))return;
+  state.gratitude=state.gratitude.filter(g=>g.id!==id);
+  save('budget_gratitude',state.gratitude);
+  state.modal=null;renderApp();
+}
+// ── HABITS ───────────────────────────────────────────────────────────────
+function habitDoneOn(h,ds){return(h.dates||[]).includes(ds);}
+function weekStart(ds){const d=parseD(ds);d.setDate(d.getDate()-d.getDay());return ymd(d);}
+function habitWeekCount(h){
+  const ws=weekStart(todayStr()),we=ymd(addDays(ws,6));
+  return(h.dates||[]).filter(x=>x>=ws&&x<=we).length;
+}
+function habitStreak(h){
+  const set=new Set(h.dates||[]);
+  if(!set.size)return 0;
+  const today=todayStr();
+  if((h.freqType||'daily')==='weekly'){
+    const target=h.freqTimes||3;
+    const cnt=s=>{const e=ymd(addDays(s,6));return(h.dates||[]).filter(x=>x>=s&&x<=e).length;};
+    let streak=0,ws=weekStart(today);
+    if(cnt(ws)>=target)streak++;
+    let s=ymd(addDays(ws,-7));
+    while(cnt(s)>=target){streak++;s=ymd(addDays(s,-7));}
+    return streak;
+  }
+  let cur=today;
+  if(!set.has(cur))cur=ymd(addDays(cur,-1));
+  let streak=0;
+  while(set.has(cur)){streak++;cur=ymd(addDays(cur,-1));}
+  return streak;
+}
+function habitRate(h,days){
+  const set=new Set(h.dates||[]);
+  const today=todayStr();
+  if((h.freqType||'daily')==='weekly'){
+    const target=h.freqTimes||3;
+    let done=0;
+    for(let i=0;i<days;i++)if(set.has(ymd(addDays(today,-i))))done++;
+    return Math.min(100,Math.round(done/(target*(days/7))*100));
+  }
+  const created=h.createdAt||ymd(addDays(today,-days+1));
+  let done=0,total=0;
+  for(let i=0;i<days;i++){
+    const ds=ymd(addDays(today,-i));
+    if(ds<created)break;
+    total++;if(set.has(ds))done++;
+  }
+  return total?Math.round(done/total*100):0;
+}
+function toggleHabitDay(id,ds){
+  const h=(state.habits||[]).find(x=>x.id===id);if(!h)return;
+  h.dates=h.dates||[];
+  const i=h.dates.indexOf(ds);
+  if(i>=0)h.dates.splice(i,1);else h.dates.push(ds);
+  save('budget_habits',state.habits);renderApp();
+}
+function saveHabit(){
+  const f=state.editForm;
+  const name=(f.habitName||'').trim();
+  if(!name){showToast('請輸入名稱');return;}
+  const freqType=f.habitFreqType==='weekly'?'weekly':'daily';
+  const freqTimes=Math.max(1,Math.min(7,parseInt(f.habitFreqTimes)||3));
+  const icon=(f.icon||'✅').trim()||'✅';
+  const color=f.habitColor||ACC_COLORS[2];
+  if(f.habitId){
+    const i=state.habits.findIndex(h=>h.id===f.habitId);
+    if(i>=0)state.habits[i]={...state.habits[i],name,icon,color,freqType,freqTimes};
+  }else{
+    state.habits.push({id:'habit_'+Date.now(),name,icon,color,freqType,freqTimes,dates:[],createdAt:todayStr()});
+  }
+  save('budget_habits',state.habits);
+  state.modal=null;showToast('已儲存 ✓');renderApp();
+}
+function deleteHabit(id){
+  if(!confirm('確定刪除這個習慣？所有打卡紀錄會一併刪除。'))return;
+  state.habits=state.habits.filter(h=>h.id!==id);
+  if(state.habitSelected===id)state.habitSelected=null;
+  save('budget_habits',state.habits);
+  state.modal=null;renderApp();
+}
+function archiveHabit(id){
+  const h=(state.habits||[]).find(x=>x.id===id);if(!h)return;
+  if(!confirm(`把「${h.name}」封存？之後可在「已封存」分類裡找回，打卡紀錄會保留。`))return;
+  h.archived=true;
+  if(state.habitSelected===id)state.habitSelected=(state.habits.find(x=>!x.archived)||{}).id||null;
+  save('budget_habits',state.habits);
+  state.modal=null;showToast('習慣已封存');renderApp();
+}
+function unarchiveHabit(id){
+  const h=(state.habits||[]).find(x=>x.id===id);if(!h)return;
+  h.archived=false;
+  save('budget_habits',state.habits);
+  state.modal=null;showToast('已取消封存 ✓');renderApp();
+}
+// ── MENSTRUAL CYCLE ──────────────────────────────────────────────────────
+function sortedCycles(){return(state.cycles||[]).filter(c=>c.start).slice().sort((a,b)=>a.start<b.start?-1:1);}
+function cycleStats(){
+  const st=state.cycleSettings||{};
+  const showPredict=st.showPredict!==false;
+  const cs=sortedCycles();
+  const gaps=[];
+  for(let i=1;i<cs.length;i++){
+    const g=daysBetween(cs[i-1].start,cs[i].start);
+    if(g>=15&&g<=60)gaps.push(g);
+  }
+  const recentGaps=gaps.slice(-6);
+  const avgCycle=recentGaps.length>=2?Math.round(recentGaps.reduce((a,b)=>a+b,0)/recentGaps.length):(parseInt(st.avgCycle)||28);
+  const lens=cs.filter(c=>c.end).map(c=>daysBetween(c.start,c.end)+1).filter(n=>n>=1&&n<=15);
+  const avgPeriod=lens.length?Math.round(lens.reduce((a,b)=>a+b,0)/lens.length):(parseInt(st.avgPeriod)||5);
+  const luteal=parseInt(st.luteal)||14;
+  const periodDays=new Set(),predictedDays=new Set(),fertileDays=new Set(),ovulationDays=new Set();
+  cs.forEach(c=>{
+    const end=c.end?parseD(c.end):addDays(c.start,avgPeriod-1);
+    for(let d=parseD(c.start);d<=end;d=addDays(d,1))periodDays.add(ymd(d));
+  });
+  const last=cs[cs.length-1]||null;
+  let predictNextStart=null,ovulation=null,fertileStart=null,fertileEnd=null,cycleDay=null,phase=null,daysUntil=null;
+  if(last){
+    const k=Math.max(0,Math.floor(daysBetween(last.start,todayStr())/avgCycle));
+    const curStart=ymd(addDays(last.start,k*avgCycle));
+    cycleDay=daysBetween(curStart,todayStr())+1;
+    predictNextStart=ymd(addDays(curStart,avgCycle));
+    daysUntil=daysBetween(todayStr(),predictNextStart);
+    if(showPredict){
+      for(let j=1;j<=4;j++){
+        const ps=addDays(curStart,avgCycle*j);
+        for(let i=0;i<avgPeriod;i++)predictedDays.add(ymd(addDays(ps,i)));
+        const ov=addDays(ps,-luteal);
+        ovulationDays.add(ymd(ov));
+        for(let i=-5;i<=1;i++)fertileDays.add(ymd(addDays(ov,i)));
+      }
+      ovulation=ymd(addDays(parseD(predictNextStart),-luteal));
+      fertileStart=ymd(addDays(parseD(ovulation),-5));
+      fertileEnd=ymd(addDays(parseD(ovulation),1));
+    }
+    const td=todayStr();
+    if(cycleDay<=avgPeriod)phase='月經期';
+    else if(!showPredict)phase='—';
+    else if(td>=fertileStart&&td<=fertileEnd)phase=(td===ovulation?'排卵日':'易孕期');
+    else if(td<fertileStart)phase='濾泡期';
+    else phase='黃體期';
+  }
+  periodDays.forEach(d=>{predictedDays.delete(d);fertileDays.delete(d);ovulationDays.delete(d);});
+  return{avgCycle,avgPeriod,luteal,gaps,recentGaps,lens,cycles:cs,last,periodDays,predictedDays,fertileDays,ovulationDays,
+    predictNextStart,ovulation,fertileStart,fertileEnd,cycleDay,phase,daysUntil,showPredict};
+}
+function saveCycleRec(){
+  const f=state.editForm;
+  const start=f.cycleStart||todayStr();
+  const end=f.cycleEnd||null;
+  if(end&&end<start){showToast('結束日不能早於開始日');return;}
+  if(f.cycleId){
+    const i=state.cycles.findIndex(c=>c.id===f.cycleId);
+    if(i>=0)state.cycles[i]={...state.cycles[i],start,end};
+  }else{
+    if((state.cycles||[]).some(c=>c.start===start)){showToast('這天已有經期紀錄');return;}
+    state.cycles.push({id:'cyc_'+Date.now(),start,end});
+  }
+  save('budget_cycles',state.cycles);
+  state.modal=null;showToast('已儲存 ✓');renderApp();
+}
+function deleteCycleRec(id){
+  if(!confirm('確定刪除這筆經期紀錄？'))return;
+  state.cycles=state.cycles.filter(c=>c.id!==id);
+  save('budget_cycles',state.cycles);
+  state.modal=null;renderApp();
+}
+function cycleMarkStart(ds){
+  if((state.cycles||[]).some(c=>c.start===ds)){
+    state.cycles=state.cycles.filter(c=>c.start!==ds);
+  }else{
+    state.cycles.push({id:'cyc_'+Date.now(),start:ds,end:null});
+  }
+  save('budget_cycles',state.cycles);renderApp();
+}
+function cycleMarkEnd(ds){
+  const cand=sortedCycles().filter(c=>c.start<=ds);
+  const c=cand[cand.length-1];
+  if(!c){showToast('請先設定經期開始日');return;}
+  const i=state.cycles.findIndex(x=>x.id===c.id);
+  if(i>=0)state.cycles[i]={...state.cycles[i],end:ds};
+  save('budget_cycles',state.cycles);showToast('已設定經期結束 ✓');renderApp();
+}
+function saveCycleDay(){
+  const f=state.editForm;
+  const ds=f.cycleDayDate;
+  const entry={date:ds,flow:f.dayFlow||null,moods:f.dayMoods||[],symptoms:f.daySymptoms||[],sex:f.daySex||null,note:(f.dayNote||'').trim()};
+  state.cycleLogs=(state.cycleLogs||[]).filter(l=>l.date!==ds);
+  if(entry.flow||entry.moods.length||entry.symptoms.length||entry.sex||entry.note)state.cycleLogs.push(entry);
+  save('budget_cycle_logs',state.cycleLogs);
+  state.modal=null;showToast('已儲存 ✓');renderApp();
+}
+function saveCycleSettings(){
+  const g=id=>document.getElementById(id);
+  const st={...(state.cycleSettings||{})};
+  st.avgCycle=Math.max(15,Math.min(60,parseInt(g('ef-setavgcycle')?.value)||28));
+  st.avgPeriod=Math.max(1,Math.min(15,parseInt(g('ef-setavgperiod')?.value)||5));
+  st.luteal=Math.max(9,Math.min(18,parseInt(g('ef-setluteal')?.value)||14));
+  state.cycleSettings=st;
+  save('budget_cycle_settings',state.cycleSettings);
+  state.modal=null;showToast('設定已儲存 ✓');renderApp();
+}
+// ── PROJECT SCHEDULING ───────────────────────────────────────────────────
+function projectAllTasks(p){return(p.phases||[]).reduce((a,ph)=>a.concat(ph.tasks||[]),[]);}
+function projectProgress(p){
+  const ts=projectAllTasks(p);
+  if(!ts.length)return null;
+  const done=ts.filter(t=>t.done).length;
+  return{done,total:ts.length,pct:Math.round(done/ts.length*100)};
+}
+function projectRange(p){
+  const ds=[];
+  if(p.start)ds.push(p.start);
+  if(p.end)ds.push(p.end);
+  (p.phases||[]).forEach(ph=>{if(ph.start)ds.push(ph.start);if(ph.end)ds.push(ph.end);});
+  if(!ds.length)return null;
+  ds.sort();
+  return{start:ds[0],end:ds[ds.length-1]};
+}
+function projectEnd(p){return p.end||(projectRange(p)||{}).end||null;}
+function saveProject(){
+  const f=state.editForm;
+  const name=(f.projName||'').trim();
+  if(!name){showToast('請輸入專案名稱');return;}
+  const start=f.projStart||'',end=f.projEnd||'';
+  if(start&&end&&end<start){showToast('結束日不能早於開始日');return;}
+  if(f.projId){
+    const i=state.projects.findIndex(p=>p.id===f.projId);
+    if(i>=0)state.projects[i]={...state.projects[i],name,note:(f.projNote||'').trim(),status:f.projStatus||'todo',start,end};
+  }else{
+    const np={id:'proj_'+Date.now(),name,note:(f.projNote||'').trim(),status:f.projStatus||'todo',start,end,phases:[],createdAt:todayStr()};
+    state.projects.push(np);
+    state.projectSelected=np.id;state.projectExpanded=np.id;
+  }
+  save('budget_projects',state.projects);
+  state.modal=null;showToast('已儲存 ✓');renderApp();
+}
+function deleteProject(id){
+  if(!confirm('確定刪除這個專案？所有階段與任務會一併刪除。'))return;
+  state.projects=state.projects.filter(p=>p.id!==id);
+  if(state.projectSelected===id)state.projectSelected=null;
+  save('budget_projects',state.projects);
+  state.modal=null;renderApp();
+}
+function setProjectStatus(id,st){
+  const p=state.projects.find(x=>x.id===id);if(!p)return;
+  p.status=st;
+  save('budget_projects',state.projects);renderApp();
+}
+function savePhase(){
+  const f=state.editForm;
+  const p=state.projects.find(x=>x.id===f.phaseProjId);
+  if(!p){state.modal=null;renderApp();return;}
+  const name=(f.phaseName||'').trim();
+  if(!name){showToast('請輸入階段名稱');return;}
+  const start=f.phaseStart||todayStr();
+  const end=f.phaseEnd||start;
+  if(end<start){showToast('結束日不能早於開始日');return;}
+  p.phases=p.phases||[];
+  if(f.phaseId){
+    const i=p.phases.findIndex(x=>x.id===f.phaseId);
+    if(i>=0)p.phases[i]={...p.phases[i],name,start,end,color:f.phaseColor||p.phases[i].color};
+  }else{
+    p.phases.push({id:'phase_'+Date.now(),name,start,end,color:f.phaseColor||ACC_COLORS[p.phases.length%ACC_COLORS.length],tasks:[]});
+  }
+  p.phases.sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0);
+  save('budget_projects',state.projects);
+  state.modal=null;showToast('已儲存 ✓');renderApp();
+}
+function deletePhase(projId,phaseId){
+  if(!confirm('確定刪除這個階段？底下的任務會一併刪除。'))return;
+  const p=state.projects.find(x=>x.id===projId);if(!p)return;
+  p.phases=(p.phases||[]).filter(x=>x.id!==phaseId);
+  save('budget_projects',state.projects);
+  state.modal=null;renderApp();
+}
+function addPhaseTask(projId,phaseId,text){
+  const v=(text||'').trim();if(!v)return;
+  const p=state.projects.find(x=>x.id===projId);if(!p)return;
+  const ph=(p.phases||[]).find(x=>x.id===phaseId);if(!ph)return;
+  ph.tasks=[...(ph.tasks||[]),{id:'ptask_'+Date.now(),text:v,due:'',done:false}];
+  save('budget_projects',state.projects);renderApp();
+}
+function togglePhaseTask(projId,phaseId,taskId){
+  const p=state.projects.find(x=>x.id===projId);if(!p)return;
+  const ph=(p.phases||[]).find(x=>x.id===phaseId);if(!ph)return;
+  const t=(ph.tasks||[]).find(x=>x.id===taskId);if(!t)return;
+  t.done=!t.done;
+  save('budget_projects',state.projects);renderApp();
+}
+function saveTask(){
+  const f=state.editForm;
+  const p=state.projects.find(x=>x.id===f.taskProjId);
+  const ph=p&&(p.phases||[]).find(x=>x.id===f.taskPhaseId);
+  if(!ph){state.modal=null;renderApp();return;}
+  const text=(f.taskText||'').trim();
+  if(!text){showToast('請輸入任務內容');return;}
+  const t=(ph.tasks||[]).find(x=>x.id===f.taskId);
+  if(t){t.text=text;t.due=f.taskDue||'';}
+  save('budget_projects',state.projects);
+  state.modal=null;showToast('已儲存 ✓');renderApp();
+}
+function deletePhaseTask(projId,phaseId,taskId){
+  const p=state.projects.find(x=>x.id===projId);if(!p)return;
+  const ph=(p.phases||[]).find(x=>x.id===phaseId);if(!ph)return;
+  ph.tasks=(ph.tasks||[]).filter(t=>t.id!==taskId);
+  save('budget_projects',state.projects);
+  state.modal=null;renderApp();
 }

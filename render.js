@@ -21,8 +21,8 @@ const MODULES=[
   {id:'home',lbl:'首頁',module:'home'},
   {id:'finance',lbl:'財務',module:'finance',view:'add'},
   {id:'insurance',lbl:'保險',module:'insurance'},
-  {id:'todo',lbl:'代辦清單',module:'todo'},
   {id:'project',lbl:'專案排程',module:'project'},
+  {id:'course',lbl:'課程學習',module:'course'},
   {id:'goals',lbl:'目標設定',module:'goals'},
   {id:'habit',lbl:'習慣養成',module:'habit'},
   {id:'gratitude',lbl:'感恩日記',module:'gratitude'},
@@ -51,14 +51,14 @@ function renderApp(){
 }
 function renderModuleBody(){
   if(state.module==='finance')return`<div class="finance-module">${renderTopBar()+renderView()+renderBottomNav()}</div>`;
-  if(state.module==='insurance')return renderInsView();
+  if(state.module==='insurance')return`<div class="feature-module">${renderInsView()}</div>`;
   if(state.module==='home')return renderHomeModule();
-  if(state.module==='todo')return`<div class="feature-module">${renderPlaceholderModule('✅','代辦清單')}</div>`;
-  if(state.module==='project')return`<div class="feature-module">${renderPlaceholderModule('📋','專案排程')}</div>`;
+  if(state.module==='project')return`<div class="feature-module">${renderProjectModule()}</div>`;
+  if(state.module==='course')return`<div class="feature-module">${renderPlaceholderModule('📚','課程學習')}</div>`;
   if(state.module==='goals')return`<div class="feature-module">${renderGoalsModule()}</div>`;
-  if(state.module==='habit')return`<div class="feature-module">${renderPlaceholderModule('🌱','習慣養成')}</div>`;
+  if(state.module==='habit')return`<div class="feature-module">${renderHabitModule()}</div>`;
   if(state.module==='gratitude')return`<div class="feature-module">${renderGratitudeModule()}</div>`;
-  if(state.module==='cycle')return`<div class="feature-module">${renderPlaceholderModule('🌸','月經週期')}</div>`;
+  if(state.module==='cycle')return`<div class="feature-module">${renderCycleModule()}</div>`;
   if(state.module==='settings')return`<div class="feature-module">${renderWorkspaceSettingsModule()}</div>`;
   return'';
 }
@@ -120,9 +120,9 @@ function renderRemindersCard(){
   }).join('');
   return`<div class="card home-feature-card"><div class="hf-title">七天內提醒</div><div class="hf-scroll">${ccItems}${fxItems}</div></div>`;
 }
-function renderTodoTeaserCard(){
-  return`<div class="card home-feature-card hf-clickable" data-module="todo"><div class="hf-title">代辦清單</div>
-    <div class="hf-hint">代辦清單還沒開始蓋，敬請期待</div>
+function renderCourseTeaserCard(){
+  return`<div class="card home-feature-card hf-clickable" data-module="course"><div class="hf-title">課程學習</div>
+    <div class="hf-hint">規劃中，敬請期待</div>
   </div>`;
 }
 function renderGoalListBody(list){
@@ -144,9 +144,212 @@ function renderGoalsTeaserCard(){
   </div>`;
 }
 function renderProjectTeaserCard(){
+  const ps=state.projects||[];
+  const ico={todo:'○ ',doing:'◐ ',done:'✓ '};
   return`<div class="card home-feature-card hf-clickable" data-module="project"><div class="hf-title">專案排程</div>
-    <div class="hf-hint">規劃中，敬請期待</div>
+    ${ps.length?`<div class="hf-scroll">${ps.slice(0,6).map(p=>`<div class="reminder-row">
+      <span class="rd-lbl">${ico[p.status||'todo']}${escHtml(p.name)}</span></div>`).join('')}</div>`
+      :`<div class="hf-hint">尚未新增專案，點擊開始規劃</div>`}
   </div>`;
+}
+// ── RENDER: PROJECT SCHEDULING ─────────────────────────────────────────────
+const PROJ_STATUS={todo:'未開始',doing:'進行中',done:'已完成'};
+function renderProjectModule(){
+  const all=state.projects||[];
+  const filter=state.projectFilter||'all';
+  const list=filter==='all'?all:all.filter(p=>(p.status||'todo')===filter);
+  const tabs=[{id:'all',lbl:'全部'},{id:'todo',lbl:'未開始'},{id:'doing',lbl:'進行中'},{id:'done',lbl:'已完成'}];
+  let sel=state.projectSelected&&all.find(p=>p.id===state.projectSelected);
+  if(!sel)sel=list[0]||all[0]||null;
+  state.projectSelected=sel?sel.id:null;
+  return`<div class="hdr"><div class="hdr-in">
+    <h1>專案排程</h1>
+    <div class="sub">把專案拆成階段與任務，用時間軸掌握進度</div>
+  </div></div>
+  <div class="content" style="padding-top:12px">
+    <button class="save-btn" data-a="newProject" style="margin-bottom:14px">＋ 新增專案</button>
+    ${all.length?`<div class="proj-layout">
+      <div class="proj-gantt-col">
+        <div class="card" style="padding:14px">${renderProjectGantt(all,state.projectSelected)}</div>
+      </div>
+      <div class="proj-list-col">
+        <div class="chips">${tabs.map(t=>`<button class="chip${filter===t.id?' ac':''}" data-a="projectFilt" data-v="${t.id}">${t.lbl}</button>`).join('')}</div>
+        ${list.length?list.map(p=>renderProjectCard(p,sel&&sel.id===p.id,state.projectExpanded===p.id)).join(''):`
+          <div class="empty" style="padding:30px 20px"><p>這個分類沒有專案</p></div>`}
+      </div>
+    </div>`:`<div class="empty"><div class="ei">📋</div><p>還沒有任何專案，點上面按鈕新增一個吧</p></div>`}
+  </div>`;
+}
+function renderProjectGantt(projects,selId){
+  const head=`<div class="proj-gantt-title">專案時間軸</div>`;
+  const dated=projects.map(p=>({p,r:projectRange(p)})).filter(x=>x.r);
+  if(!dated.length)return head+`<div class="empty" style="padding:24px 10px"><div class="ei">📅</div><p>幫專案（或階段）填入起訖日，就會出現在時間軸上</p></div>`;
+  const allD=[];dated.forEach(x=>{allD.push(x.r.start,x.r.end);});
+  allD.sort();
+  const rngStart=allD[0],rngEnd=allD[allD.length-1];
+  const start=addDays(rngStart,-3),end=addDays(rngEnd,3);
+  const sY=ymd(start),eY=ymd(end);
+  const total=Math.max(1,daysBetween(sY,eY));
+  const pctFor=ds=>Math.max(0,Math.min(100,daysBetween(sY,ds)/total*100));
+  const grids=[];
+  let cur=new Date(start.getFullYear(),start.getMonth()+1,1);
+  while(ymd(cur)<eY){grids.push({ds:ymd(cur),lbl:`${cur.getMonth()+1}月`});cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);}
+  const today=todayStr();
+  const todayIn=today>=sY&&today<=eY;
+  const overlay=grids.map(g=>`<div class="gantt-grid" style="left:${pctFor(g.ds)}%"></div>`).join('')
+    +(todayIn?`<div class="gantt-today" style="left:${pctFor(today)}%"></div>`:'');
+  const stCol={todo:'#9AA0A6',doing:'var(--p)',done:'#7A9878'};
+  const rows=[];
+  dated.forEach(({p,r})=>{
+    const isSel=p.id===selId;
+    const L=pctFor(r.start),R=pctFor(r.end),w=Math.max(2,R-L);
+    rows.push(`<div class="gantt-row proj-row${isSel?' sel':''}" data-a="projectSelect" data-v="${p.id}">
+      <div class="gantt-label" title="${escHtml(p.name)}">${escHtml(p.name)}</div>
+      <div class="gantt-track">${overlay}
+        <div class="gantt-bar big" style="left:${L}%;width:${w}%;background:${stCol[p.status||'todo']}"></div>
+      </div>
+    </div>`);
+    if(isSel){
+      (p.phases||[]).slice().sort((a,b)=>a.start<b.start?-1:1).forEach(ph=>{
+        const pl=pctFor(ph.start),pr=pctFor(ph.end),pw=Math.max(2,pr-pl);
+        const ts=ph.tasks||[];const tp=ts.length?`${ts.filter(t=>t.done).length}/${ts.length}`:'';
+        rows.push(`<div class="gantt-row phase-row" data-a="editPhase" data-pid="${p.id}" data-v="${ph.id}">
+          <div class="gantt-label sub" title="${escHtml(ph.name)}">└ ${escHtml(ph.name)}</div>
+          <div class="gantt-track">${overlay}
+            <div class="gantt-bar" data-a="editPhase" data-pid="${p.id}" data-v="${ph.id}" style="left:${pl}%;width:${pw}%;background:${ph.color||'var(--p)'}">${tp?`<span class="gantt-bar-lbl">${tp}</span>`:''}</div>
+          </div>
+        </div>`);
+      });
+    }
+  });
+  return head+`
+    <div class="gantt-axis"><div class="gantt-label"></div><div class="gantt-track">${grids.map(g=>`<span class="gantt-axis-lbl" style="left:${pctFor(g.ds)}%">${g.lbl}</span>`).join('')}</div></div>
+    <div class="gantt-body">${rows.join('')}</div>
+    <div class="gantt-scale"><span>${rngStart.slice(0,7).replace('-','/')}</span><span>${rngEnd.slice(0,7).replace('-','/')}</span></div>
+    <div class="gantt-hint">點專案名稱可選取並展開階段${todayIn?'・紅線＝今天':''}</div>`;
+}
+function renderProjectCard(p,selected,expanded){
+  const prog=projectProgress(p);
+  const pEnd=projectEnd(p);
+  const st=p.status||'todo';
+  let countdown='';
+  if(pEnd&&st!=='done'){
+    const d=daysBetween(todayStr(),pEnd);
+    countdown=d>0?`距結束 ${d} 天`:d===0?'今天結束':`已超過 ${-d} 天`;
+  }
+  const spanTxt=(p.start||p.end)?`${(p.start||'?').slice(5).replace('-','/')} – ${(p.end||'?').slice(5).replace('-','/')}`:'';
+  const phases=(p.phases||[]).slice().sort((a,b)=>a.start<b.start?-1:1);
+  return`<div class="proj-card${selected?' sel':''}${expanded?' expanded':''}">
+    <div class="proj-card-top" data-a="projToggle" data-v="${p.id}">
+      <div class="proj-card-head">
+        <span class="proj-caret">${expanded?'▾':'▸'}</span>
+        <div style="min-width:0;flex:1">
+          <span class="proj-status ${st}">${PROJ_STATUS[st]}</span>
+          <div class="proj-name">${escHtml(p.name)}</div>
+        </div>
+        <button class="icon-btn edit" data-a="editProject" data-v="${p.id}">···</button>
+      </div>
+      ${expanded&&p.note?`<div class="proj-note">${escHtml(p.note)}</div>`:''}
+      ${spanTxt?`<div class="proj-span">📅 ${spanTxt}</div>`:''}
+      ${prog?`<div class="proj-bar"><div class="bar-bg"><div class="bar-fill ok" style="width:${prog.pct}%"></div></div>
+        <span class="proj-bar-lbl">任務 ${prog.done}/${prog.total}（${prog.pct}%）${countdown?'・'+countdown:''}</span></div>`
+        :`<div class="proj-bar-lbl" style="margin:6px 0 0">${countdown||(spanTxt?'':'尚未安排起訖或階段')}</div>`}
+      ${!expanded&&phases.length?`<div class="proj-collapsed-hint">${phases.length} 個階段・點展開</div>`:''}
+    </div>
+    ${expanded?`
+    <div class="proj-status-pills">
+      ${['todo','doing','done'].map(s=>`<button class="mini-pill${st===s?' on':''}" data-a="projStatus" data-pid="${p.id}" data-v="${s}">${PROJ_STATUS[s]}</button>`).join('')}
+    </div>
+    <div class="proj-phases">${phases.map(ph=>renderProjectPhase(p,ph)).join('')}</div>
+    <button class="outline-btn" style="width:100%;margin-top:8px;padding:8px" data-a="newPhase" data-v="${p.id}">＋ 新增階段</button>`:''}
+  </div>`;
+}
+function renderProjectPhase(p,ph){
+  const ts=ph.tasks||[];
+  const done=ts.filter(t=>t.done).length;
+  return`<div class="proj-phase">
+    <div class="proj-phase-head" data-a="editPhase" data-pid="${p.id}" data-v="${ph.id}">
+      <span class="proj-phase-dot" style="background:${ph.color||'var(--p)'}"></span>
+      <span class="proj-phase-name">${escHtml(ph.name)}</span>
+      <span class="proj-phase-date">${ph.start.slice(5).replace('-','/')}–${ph.end.slice(5).replace('-','/')}${ts.length?` ・${done}/${ts.length}`:''}</span>
+    </div>
+    <div class="proj-tasks">
+      ${ts.map(t=>`<div class="proj-task-row">
+        <span class="goal-check${t.done?' done':''}" data-a="toggleProjTask" data-pid="${p.id}" data-phid="${ph.id}" data-v="${t.id}">${t.done?'✓':''}</span>
+        <span class="proj-task-text${t.done?' done':''}" data-a="editTask" data-pid="${p.id}" data-phid="${ph.id}" data-v="${t.id}">${escHtml(t.text)}${t.due?`<span class="proj-task-due">${t.due.slice(5).replace('-','/')}</span>`:''}</span>
+      </div>`).join('')}
+    </div>
+    <div class="goal-add-task">
+      <input type="text" id="newptask-${ph.id}" placeholder="新增任務…">
+      <button data-a="addProjTask" data-pid="${p.id}" data-v="${ph.id}">＋</button>
+    </div>
+  </div>`;
+}
+function renderEditProjectModal(){
+  const f=state.editForm;
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${f.projId?'編輯專案':'新增專案'}</div>
+    <div class="form-field" style="margin-bottom:12px"><label>專案名稱</label>
+      <input class="form-input" id="ef-projname" type="text" placeholder="例：網站改版、搬家計畫" value="${escHtml(f.projName||'')}"></div>
+    <div class="form-row">
+      <div class="form-field"><label>專案開始日</label>
+        <input class="form-input" id="ef-projstart" type="date" value="${f.projStart||''}"></div>
+      <div class="form-field"><label>專案結束日</label>
+        <input class="form-input" id="ef-projend" type="date" value="${f.projEnd||''}"></div>
+    </div>
+    <div class="form-field" style="margin-bottom:12px"><label>備註</label>
+      <textarea class="form-input" id="ef-projnote" rows="2" placeholder="選填">${escHtml(f.projNote||'')}</textarea></div>
+    <div class="slabel">狀態</div>
+    <div class="acc-row" style="margin-bottom:14px">
+      ${['todo','doing','done'].map(s=>`<button class="acc-pill${(f.projStatus||'todo')===s?' active':''}" data-a="projStatusForm" data-v="${s}">${PROJ_STATUS[s]}</button>`).join('')}
+    </div>
+    <div class="modal-btns">
+      <button class="save-btn" data-a="saveProjBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
+    ${f.projId?`<button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delProject" data-v="${f.projId}">🗑 刪除專案</button>`:''}
+  </div></div>`;
+}
+function renderEditPhaseModal(){
+  const f=state.editForm;
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${f.phaseId?'編輯階段':'新增階段'}</div>
+    <div class="form-field" style="margin-bottom:12px"><label>階段名稱</label>
+      <input class="form-input" id="ef-phasename" type="text" placeholder="例：設計、開發、測試" value="${escHtml(f.phaseName||'')}"></div>
+    <div class="form-row">
+      <div class="form-field"><label>開始日</label>
+        <input class="form-input" id="ef-phasestart" type="date" value="${f.phaseStart||todayStr()}"></div>
+      <div class="form-field"><label>結束日</label>
+        <input class="form-input" id="ef-phaseend" type="date" value="${f.phaseEnd||''}"></div>
+    </div>
+    <div class="slabel">顏色</div>
+    <div class="color-swatches" style="margin-bottom:14px">
+      ${ACC_COLORS.map(c=>`<div class="swatch${(f.phaseColor||ACC_COLORS[0])===c?' sel':''}" style="background:${c}" data-a="phaseColor" data-v="${c}"></div>`).join('')}
+    </div>
+    <div class="modal-btns">
+      <button class="save-btn" data-a="savePhaseBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
+    ${f.phaseId?`<button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delPhase" data-pid="${f.phaseProjId}" data-v="${f.phaseId}">🗑 刪除階段</button>`:''}
+  </div></div>`;
+}
+function renderEditTaskModal(){
+  const f=state.editForm;
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">編輯任務</div>
+    <div class="form-field" style="margin-bottom:12px"><label>任務內容</label>
+      <input class="form-input" id="ef-tasktext" type="text" value="${escHtml(f.taskText||'')}"></div>
+    <div class="form-field" style="margin-bottom:14px"><label>截止日（選填）</label>
+      <input class="form-input" id="ef-taskdue" type="date" value="${f.taskDue||''}"></div>
+    <div class="modal-btns">
+      <button class="save-btn" data-a="saveTaskBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
+    <button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delProjTask" data-pid="${f.taskProjId}" data-phid="${f.taskPhaseId}" data-v="${f.taskId}">🗑 刪除任務</button>
+  </div></div>`;
 }
 function renderHomeModule(){
   const n=new Date();
@@ -154,10 +357,10 @@ function renderHomeModule(){
   const hidden=state.homeHiddenCards||[];
   const tabDefs=[
     {id:'reminders',lbl:'七天內提醒',render:renderRemindersCard},
-    {id:'todo',lbl:'代辦清單',render:renderTodoTeaserCard},
     {id:'dream',lbl:'夢想清單',render:renderDreamTeaserCard},
     {id:'goals',lbl:'目標設定',render:renderGoalsTeaserCard},
     {id:'project',lbl:'專案排程',render:renderProjectTeaserCard},
+    {id:'course',lbl:'課程學習',render:renderCourseTeaserCard},
   ].filter(t=>!hidden.includes(t.id));
   let active=state.homeCardTab||'reminders';
   if(!tabDefs.find(t=>t.id===active))active=tabDefs.length?tabDefs[0].id:'reminders';
@@ -270,29 +473,62 @@ function renderEditGoalModal(){
 // ── RENDER: GRATITUDE JOURNAL ────────────────────────────────────────────────
 function renderGratitudeModule(){
   const{y,m}=state.gratMonth;
-  const entries=state.gratitude
-    .filter(g=>{const d=new Date(g.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m;})
+  const monthEntries=state.gratitude
+    .filter(g=>{const d=parseD(g.date);return d.getFullYear()===y&&d.getMonth()===m;})
     .sort((a,b)=>a.date<b.date?-1:1);
+  const total=state.gratitude.length;
   return`<div class="hdr"><div class="hdr-in">
     <h1>感恩日記</h1>
     <div class="sub">寫下每天值得感恩的小事</div>
   </div></div>
   <div class="content" style="padding-top:12px">
     <button class="save-btn" data-a="newGrat" style="margin-bottom:14px">＋ 新增感恩</button>
-    <div class="grat-month-nav">
-      <div class="cal-nav">
-        <button class="cal-nb" data-a="gprev">‹</button>
-        <span class="cal-title-text" style="flex:1;text-align:center">${y}年${MONTHS[m]}</span>
-        <button class="cal-nb" data-a="gnext">›</button>
+    <div class="grat-layout">
+      <div class="grat-cal-col">
+        <div class="card" style="padding:14px">
+          <div class="cal-nav">
+            <button class="cal-nb" data-a="gprev">‹</button>
+            <span class="cal-title-text" style="flex:1;text-align:center">${y}年${MONTHS[m]}</span>
+            <button class="cal-nb" data-a="gnext">›</button>
+          </div>
+          <div class="cmini-cal" style="margin-top:8px">
+            <div class="weekdays">${['日','一','二','三','四','五','六'].map(d=>`<div class="wday">${d}</div>`).join('')}</div>
+            <div class="cmini-grid">${renderGratCalCells(y,m)}</div>
+          </div>
+          <div style="font-size:12px;color:var(--text2);margin-top:8px">點日期可新增或編輯當天的感恩日記</div>
+        </div>
+      </div>
+      <div class="grat-list-col">
+        <div class="card" style="padding:14px">
+          <div class="card-title" style="margin-bottom:6px">本月紀錄</div>
+          <div class="grat-count"><b>${monthEntries.length}</b> 篇<span class="grat-count-total">・累積 ${total} 篇</span></div>
+          <div class="grat-entry-list">
+            ${monthEntries.length?monthEntries.map(g=>{
+              const d=parseD(g.date);
+              return`<div class="grat-entry" data-a="editGrat" data-v="${g.id}">
+                <div class="grat-entry-date">${d.getMonth()+1}/${d.getDate()}</div>
+                <div class="grat-entry-text">${escHtml(g.text)}</div>
+              </div>`;
+            }).join(''):`<div class="empty" style="padding:24px 10px"><div class="ei">🙏</div><p>這個月還沒有感恩紀錄</p></div>`}
+          </div>
+        </div>
       </div>
     </div>
-    ${entries.length?`<div class="grat-grid">${entries.map(g=>renderGratTile(g)).join('')}</div>`:`
-      <div class="empty"><div class="ei">🙏</div><p>這個月還沒有感恩紀錄，點上面按鈕新增一篇吧</p></div>`}
   </div>`;
 }
-function renderGratTile(g){
-  const d=new Date(g.date+'T00:00:00');
-  return`<div class="grat-tile" data-a="editGrat" data-v="${g.id}" title="${escHtml(g.text)}">${d.getDate()}</div>`;
+function renderGratCalCells(y,m){
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const today=todayStr();
+  const byDate={};
+  state.gratitude.forEach(g=>{byDate[g.date]=g;});
+  let cells=Array.from({length:first},()=>'<div class="cmini-day empty"></div>').join('');
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const has=byDate[ds];
+    cells+=`<div class="cmini-day${has?' grat-on':''}${ds===today?' today':''}" data-a="gratDay" data-v="${ds}"${has?` title="${escHtml(has.text)}"`:''}>${d}</div>`;
+  }
+  return cells;
 }
 function renderEditGratModal(){
   const f=state.editForm;
@@ -308,6 +544,335 @@ function renderEditGratModal(){
       <button class="outline-btn" data-a="closeModal">取消</button>
     </div>
     ${f.gratId?`<button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delGrat" data-v="${f.gratId}">🗑 刪除</button>`:''}
+  </div></div>`;
+}
+// ── RENDER: HABITS ─────────────────────────────────────────────────────────
+function renderHabitModule(){
+  const all=state.habits||[];
+  const active=all.filter(h=>!h.archived);
+  const archived=all.filter(h=>h.archived);
+  const view=state.habitView||'active';
+  const filter=state.habitFilter||'all';
+  let list;
+  if(view==='archived')list=archived;
+  else if(filter==='all')list=active;
+  else list=active.filter(h=>(h.freqType||'daily')===filter);
+  const tabs=[{id:'all',lbl:'全部'},{id:'daily',lbl:'每日'},{id:'weekly',lbl:'每週'}];
+  const today=todayStr();
+  const doneToday=active.filter(h=>habitDoneOn(h,today)).length;
+  // 左側月曆顯示的習慣（封存的也可回顧）
+  let sel=state.habitSelected&&all.find(h=>h.id===state.habitSelected);
+  if(view==='archived'&&(!sel||!sel.archived))sel=archived[0]||sel||null;
+  if(!sel)sel=active[0]||archived[0]||null;
+  state.habitSelected=sel?sel.id:null;
+  return`<div class="hdr"><div class="hdr-in">
+    <h1>習慣養成</h1>
+    <div class="sub">每天完成一點，累積成長的軌跡</div>
+  </div></div>
+  <div class="content" style="padding-top:12px">
+    <button class="save-btn" data-a="newHabit" style="margin-bottom:14px">＋ 新增習慣</button>
+    ${all.length?`<div class="habit-layout">
+      <div class="habit-cal-col">${sel?renderHabitCalCard(sel):''}</div>
+      <div class="habit-list-col">
+        <div class="stabs" style="margin-bottom:12px">
+          <button class="stab${view==='active'?' active':''}" data-a="habitView" data-v="active">建立中 (${active.length})</button>
+          <button class="stab${view==='archived'?' active':''}" data-a="habitView" data-v="archived">封存 (${archived.length})</button>
+        </div>
+        ${view==='active'?`<div class="chips">${tabs.map(t=>
+          `<button class="chip${filter===t.id?' ac':''}" data-a="habitFilt" data-v="${t.id}">${t.lbl}</button>`
+        ).join('')}</div>`:''}
+        ${view==='active'&&active.length?`<div class="habit-summary">今天已完成 <b>${doneToday}</b> / ${active.length} 個習慣</div>`:''}
+        ${list.length?list.map(h=>renderHabitCard(h,today,sel&&sel.id===h.id)).join(''):`
+          <div class="empty" style="padding:30px 20px"><p>${view==='archived'?'沒有封存的習慣':'這個分類沒有習慣'}</p></div>`}
+      </div>
+    </div>`:`<div class="empty"><div class="ei">🌱</div><p>還沒有任何習慣，點上面按鈕新增一個吧</p></div>`}
+  </div>`;
+}
+function renderHabitCalCard(h){
+  const ym=state.habitMonthYM||{y:new Date().getFullYear(),m:new Date().getMonth()};
+  const{y,m}=ym;
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const col=h.color||'#7A9878';
+  const today=todayStr();
+  let cells=Array.from({length:first},()=>'<div class="cmini-day empty"></div>').join('');
+  let doneCnt=0;
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const on=habitDoneOn(h,ds);if(on)doneCnt++;
+    const future=ds>today;
+    cells+=`<div class="cmini-day${on?' on':''}${ds===today?' today':''}" ${future?'':`data-a="toggleHabitDay" data-v="${ds}"`} style="${on?`background:${col};border-color:${col};color:#fff`:''}${future?';opacity:.35':''}">${d}</div>`;
+  }
+  return`<div class="card" style="padding:14px">
+    <div class="habit-cal-title">${escHtml(h.icon||'✅')} ${escHtml(h.name)}${h.archived?'<span class="habit-arch-tag">已封存</span>':''}</div>
+    <div class="cal-nav" style="margin-top:10px">
+      <button class="cal-nb" data-a="habitMonthPrev">‹</button>
+      <span class="cal-title-text" style="flex:1;text-align:center">${y}年${MONTHS[m]}・完成 ${doneCnt} 天</span>
+      <button class="cal-nb" data-a="habitMonthNext">›</button>
+    </div>
+    <div class="cmini-cal" style="margin-top:8px">
+      <div class="weekdays">${['日','一','二','三','四','五','六'].map(d=>`<div class="wday">${d}</div>`).join('')}</div>
+      <div class="cmini-grid">${cells}</div>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-top:8px">點格子可補打卡／取消（未來日期不可點）</div>
+  </div>`;
+}
+function renderHabitCard(h,today,selected){
+  const weekly=(h.freqType||'daily')==='weekly';
+  const col=h.color||'#7A9878';
+  if(h.archived){
+    return`<div class="habit-card${selected?' sel':''}" data-a="habitSelect" data-v="${h.id}">
+      <div class="habit-top">
+        <div class="habit-info">
+          <div class="habit-name" style="color:var(--text2)">${escHtml(h.icon||'✅')} ${escHtml(h.name)}</div>
+          <div class="habit-meta"><span>共完成 ${(h.dates||[]).length} 天</span></div>
+        </div>
+        <button class="icon-btn edit" data-a="editHabit" data-v="${h.id}">···</button>
+      </div>
+      <button class="outline-btn" style="width:100%;margin-top:6px;padding:7px" data-a="unarchiveHabit" data-v="${h.id}">↩ 取消封存</button>
+    </div>`;
+  }
+  const done=habitDoneOn(h,today);
+  const streak=habitStreak(h);
+  const wk=habitWeekCount(h);
+  const target=weekly?(h.freqTimes||3):7;
+  const pct=Math.min(Math.round((wk/target)*100),100);
+  const rate=habitRate(h,30);
+  return`<div class="habit-card${selected?' sel':''}" data-a="habitSelect" data-v="${h.id}">
+    <div class="habit-top">
+      <button class="habit-check${done?' done':''}" data-a="toggleHabit" data-v="${h.id}" style="${done?`background:${col};border-color:${col}`:`border-color:${col}`}">${done?'✓':''}</button>
+      <div class="habit-info">
+        <div class="habit-name">${escHtml(h.icon||'✅')} ${escHtml(h.name)}</div>
+        <div class="habit-meta">
+          <span>🔥 連續 ${streak} ${weekly?'週':'天'}</span><span class="dot">·</span>
+          <span>${weekly?`本週 ${wk}/${target}`:`近 30 天 ${rate}%`}</span>
+        </div>
+      </div>
+      <button class="icon-btn edit" data-a="editHabit" data-v="${h.id}">···</button>
+    </div>
+    <div class="habit-bar"><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      <span class="habit-bar-lbl">${weekly?'本週進度':'本週完成 '+wk+'/7'}</span></div>
+    <div class="habit-strip">${habitRecentStrip(h,14,col)}</div>
+  </div>`;
+}
+function habitRecentStrip(h,n,col){
+  let out='';
+  for(let i=n-1;i>=0;i--){
+    const ds=ymd(addDays(todayStr(),-i));
+    const on=habitDoneOn(h,ds);
+    out+=`<span class="hs-cell${on?' on':''}"${on?` style="background:${col}"`:''}></span>`;
+  }
+  return out;
+}
+function renderEditHabitModal(){
+  const f=state.editForm;
+  const weekly=f.habitFreqType==='weekly';
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${f.habitId?'編輯習慣':'新增習慣'}</div>
+    <div class="form-field" style="margin-bottom:12px"><label>名稱</label>
+      <input class="form-input" id="ef-habitname" type="text" placeholder="例：喝 2000cc 水、閱讀 20 分鐘" value="${escHtml(f.habitName||'')}"></div>
+    <div class="form-field" style="max-width:90px;margin-bottom:12px"><label>圖示</label>
+      <button class="icon-field" id="emoji-field-btn" data-a="toggleEmojiPicker" data-field="icon">${escHtml(f.icon||'✅')}</button>
+      <input id="ef-icon" type="hidden" value="${escHtml(f.icon||'✅')}">
+    </div>
+    <div id="emoji-picker-grid" class="emoji-grid" style="display:none;margin-bottom:14px">
+      ${EMOJI_QUICK.map(e=>`<button class="emoji-btn${(f.icon||'')===e?' active':''}" data-a="pickEmoji" data-v="${e}">${e}</button>`).join('')}
+    </div>
+    <div class="slabel">顏色</div>
+    <div class="color-swatches" style="margin-bottom:14px">
+      ${ACC_COLORS.map(c=>`<div class="swatch${(f.habitColor||ACC_COLORS[2])===c?' sel':''}" style="background:${c}" data-a="habitColor" data-v="${c}"></div>`).join('')}
+    </div>
+    <div class="slabel">頻率</div>
+    <div class="acc-row" style="margin-bottom:12px">
+      <button class="acc-pill${!weekly?' active':''}" data-a="habitFreqType" data-v="daily">每天</button>
+      <button class="acc-pill${weekly?' active':''}" data-a="habitFreqType" data-v="weekly">每週 N 次</button>
+    </div>
+    ${weekly?`<div class="form-field" style="margin-bottom:14px"><label>每週目標次數</label>
+      <input class="form-input" id="ef-habittimes" type="number" inputmode="numeric" min="1" max="7" value="${f.habitFreqTimes||3}"></div>`:''}
+    <div class="modal-btns">
+      <button class="save-btn" data-a="saveHabitBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
+    ${f.habitId?`<button class="outline-btn" style="width:100%;margin-top:8px" data-a="${f.habitArchived?'unarchiveHabit':'archiveHabit'}" data-v="${f.habitId}">${f.habitArchived?'↩ 取消封存':'📦 封存習慣'}</button>`:''}
+    ${f.habitId?`<button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delHabit" data-v="${f.habitId}">🗑 刪除</button>`:''}
+  </div></div>`;
+}
+// ── RENDER: MENSTRUAL CYCLE ────────────────────────────────────────────────
+function renderCycleModule(){
+  const s=cycleStats();
+  const{y,m}=state.cycleMonth;
+  return`<div class="hdr"><div class="hdr-in">
+    <h1>月經週期</h1>
+    <div class="sub">記錄經期，預測下次來潮與易孕期</div>
+  </div></div>
+  <div class="content" style="padding-top:12px">
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="save-btn" data-a="newCycle" style="flex:1">＋ 記錄經期</button>
+      <button class="outline-btn" data-a="openCycleSettings" style="flex-shrink:0">⚙ 設定</button>
+    </div>
+    <div class="cycle-layout">
+      <div class="cycle-cal-col">
+        <div class="card" style="padding:14px">
+          <div class="cycle-legend">
+            <span><i class="lg period"></i>經期</span>
+            <span><i class="lg predict"></i>預測經期</span>
+            <span><i class="lg fertile"></i>易孕期</span>
+            <span><i class="lg ovu"></i>排卵日</span>
+            <span><i class="lg sex">♥</i>性行為</span>
+          </div>
+          <div class="cal-nav" style="margin-top:12px">
+            <button class="cal-nb" data-a="cyprev">‹</button>
+            <span class="cal-title-text" style="flex:1;text-align:center">${y}年${MONTHS[m]}</span>
+            <button class="cal-nb" data-a="cynext">›</button>
+          </div>
+          <div class="cmini-cal">
+            <div class="weekdays">${['日','一','二','三','四','五','六'].map(d=>`<div class="wday">${d}</div>`).join('')}</div>
+            <div class="cmini-grid">${renderCycleCalCells(y,m,s)}</div>
+          </div>
+        </div>
+      </div>
+      <div class="cycle-side-col">
+        ${renderCycleStatusCard(s)}
+        ${renderCycleStatsSection(s)}
+      </div>
+    </div>
+  </div>`;
+}
+function renderCycleStatusCard(s){
+  if(!s.last)return`<div class="card cycle-status"><div class="empty" style="padding:24px 10px"><div class="ei">🌸</div><p>還沒有經期紀錄，點上方按鈕記錄第一次</p></div></div>`;
+  const phaseColor={'月經期':'#B87878','濾泡期':'#7A9878','易孕期':'#8B6CC8','排卵日':'#8B6CC8','黃體期':'#B89860'}[s.phase]||'var(--p)';
+  const du=s.daysUntil;
+  const duText=du>0?`預計 ${du} 天後來潮`:du===0?'預計今天來潮':`已延遲 ${-du} 天`;
+  const pms=s.showPredict&&du<=3&&du>=0;
+  return`<div class="card cycle-status">
+    <div class="cs-row">
+      <div class="cs-big">週期第 <b>${s.cycleDay}</b> 天</div>
+      <span class="cs-phase" style="background:${phaseColor}">${s.phase}</span>
+    </div>
+    <div class="cs-next">${duText}${s.predictNextStart?`（${parseD(s.predictNextStart).getMonth()+1}/${parseD(s.predictNextStart).getDate()}）`:''}</div>
+    ${s.showPredict&&s.ovulation?`<div class="cs-sub">預估排卵日 ${parseD(s.ovulation).getMonth()+1}/${parseD(s.ovulation).getDate()}・易孕期 ${parseD(s.fertileStart).getMonth()+1}/${parseD(s.fertileStart).getDate()}–${parseD(s.fertileEnd).getMonth()+1}/${parseD(s.fertileEnd).getDate()}</div>`:''}
+    ${pms?`<div class="cs-pms">🌙 接近經期，可能出現經前症候群，記得多休息</div>`:''}
+  </div>`;
+}
+function renderCycleCalCells(y,m,s){
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const today=todayStr();
+  let cells=Array.from({length:first},()=>'<div class="cmini-day empty"></div>').join('');
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let cls='cmini-day cyc';
+    if(s.periodDays.has(ds))cls+=' period';
+    else if(s.predictedDays.has(ds))cls+=' predict';
+    else if(s.fertileDays.has(ds))cls+=' fertile';
+    if(s.ovulationDays.has(ds))cls+=' ovu';
+    if(ds===today)cls+=' today';
+    const log=(state.cycleLogs||[]).find(l=>l.date===ds);
+    const hasNote=log&&(log.flow||(log.symptoms||[]).length||(log.moods||[]).length||log.note);
+    const mark=hasNote?'<span class="cyc-dot"></span>':'';
+    const sexMark=log&&log.sex?`<span class="cyc-sex">♥</span>`:'';
+    cells+=`<div class="${cls}" data-a="openCycleDay" data-v="${ds}">${d}${mark}${sexMark}</div>`;
+  }
+  return cells;
+}
+function renderCycleStatsSection(s){
+  const hist=s.cycles.slice().reverse().slice(0,8);
+  const gapMax=Math.max(35,...s.gaps);
+  return`<div class="card" style="padding:14px">
+    <div class="card-title" style="margin-bottom:10px">週期統計</div>
+    <div class="cyc-stat-row">
+      <div class="cyc-stat"><div class="v">${s.avgCycle}</div><div class="l">平均週期</div></div>
+      <div class="cyc-stat"><div class="v">${s.avgPeriod}</div><div class="l">平均經期</div></div>
+      <div class="cyc-stat"><div class="v">${s.cycles.length}</div><div class="l">紀錄次數</div></div>
+    </div>
+    ${s.recentGaps.length?`<div class="cyc-bars">${s.recentGaps.map((g,i)=>`
+      <div class="cyc-bar-col"><div class="cyc-bar" style="height:${Math.round(g/gapMax*70)}px"></div><span>${g}</span></div>`).join('')}</div>
+      <div style="font-size:11px;color:var(--text2);text-align:center">近幾次週期長度</div>`:''}
+    <div class="cyc-hist">${hist.length?hist.map(c=>{
+      const len=c.end?daysBetween(c.start,c.end)+1:null;
+      return`<div class="cyc-hist-row" data-a="editCycleRec" data-v="${c.id}">
+        <span>${parseD(c.start).getFullYear()}/${parseD(c.start).getMonth()+1}/${parseD(c.start).getDate()}${c.end?` – ${parseD(c.end).getMonth()+1}/${parseD(c.end).getDate()}`:'（進行中）'}</span>
+        <span class="cyc-hist-len">${len?len+' 天':''}</span>
+      </div>`;}).join(''):'<div style="font-size:13px;color:var(--text2)">尚無紀錄</div>'}</div>
+  </div>`;
+}
+function renderEditCycleModal(){
+  const f=state.editForm;
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${f.cycleId?'編輯經期紀錄':'記錄經期'}</div>
+    <div class="form-field" style="margin-bottom:14px"><label>經期開始日</label>
+      <input class="form-input" id="ef-cyclestart" type="date" value="${f.cycleStart||todayStr()}"></div>
+    <div class="form-field" style="margin-bottom:14px"><label>經期結束日（可留空，之後補填）</label>
+      <input class="form-input" id="ef-cycleend" type="date" value="${f.cycleEnd||''}"></div>
+    <div class="modal-btns">
+      <button class="save-btn" data-a="saveCycleBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
+    ${f.cycleId?`<button class="outline-btn" style="width:100%;margin-top:8px;color:var(--expense);border-color:var(--expense)" data-a="delCycleRec" data-v="${f.cycleId}">🗑 刪除</button>`:''}
+  </div></div>`;
+}
+function renderCycleDayModal(){
+  const f=state.editForm;
+  const ds=f.cycleDayDate;
+  const d=parseD(ds);
+  const flows=[{id:'light',lbl:'少'},{id:'medium',lbl:'中'},{id:'heavy',lbl:'多'}];
+  const moods=['開心','平靜','煩躁','低落','焦慮','易怒'];
+  const symptoms=['腹痛','頭痛','腰痠','乳房脹痛','疲倦','食慾增加','長痘','水腫','失眠','噁心'];
+  const selMoods=f.dayMoods||[],selSym=f.daySymptoms||[];
+  const isStart=(state.cycles||[]).some(c=>c.start===ds);
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} 紀錄</div>
+    <div class="acc-row" style="margin-bottom:14px">
+      <button class="acc-pill${isStart?' active':''}" data-a="cycleMarkStart" data-v="${ds}">${isStart?'✓ 已設為經期開始':'設為經期開始'}</button>
+      <button class="acc-pill" data-a="cycleMarkEnd" data-v="${ds}">設為經期結束</button>
+    </div>
+    <div class="slabel">性行為</div>
+    <div class="acc-row" style="margin-bottom:14px">
+      <button class="acc-pill${f.daySex==='protected'?' active':''}" data-a="daySex" data-v="protected">有・保護</button>
+      <button class="acc-pill${f.daySex==='unprotected'?' active':''}" data-a="daySex" data-v="unprotected">有・無保護</button>
+    </div>
+    <div class="slabel">經血量</div>
+    <div class="acc-row" style="margin-bottom:14px">
+      ${flows.map(x=>`<button class="acc-pill${f.dayFlow===x.id?' active':''}" data-a="dayFlow" data-v="${x.id}">${x.lbl}</button>`).join('')}
+    </div>
+    <div class="slabel">心情</div>
+    <div class="tag-wrap" style="margin-bottom:14px">
+      ${moods.map(x=>`<button class="tag-btn${selMoods.includes(x)?' on':''}" data-a="dayMood" data-v="${x}">${x}</button>`).join('')}
+    </div>
+    <div class="slabel">症狀</div>
+    <div class="tag-wrap" style="margin-bottom:14px">
+      ${symptoms.map(x=>`<button class="tag-btn${selSym.includes(x)?' on':''}" data-a="daySymptom" data-v="${x}">${x}</button>`).join('')}
+    </div>
+    <div class="form-field" style="margin-bottom:14px"><label>備註</label>
+      <textarea class="form-input" id="ef-daynote" rows="2" placeholder="想記下的其他事…">${escHtml(f.dayNote||'')}</textarea></div>
+    <div class="modal-btns">
+      <button class="save-btn" data-a="saveCycleDayBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
+  </div></div>`;
+}
+function renderCycleSettingsModal(){
+  const st=state.cycleSettings||{};
+  return`<div class="overlay" id="modal-overlay"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">週期設定</div>
+    <div class="form-field" style="margin-bottom:14px"><label>平均週期長度（天）— 有足夠紀錄時會自動計算</label>
+      <input class="form-input" id="ef-setavgcycle" type="number" inputmode="numeric" value="${st.avgCycle||28}"></div>
+    <div class="form-field" style="margin-bottom:14px"><label>平均經期長度（天）</label>
+      <input class="form-input" id="ef-setavgperiod" type="number" inputmode="numeric" value="${st.avgPeriod||5}"></div>
+    <div class="form-field" style="margin-bottom:14px"><label>黃體期長度（天，一般 12–16）</label>
+      <input class="form-input" id="ef-setluteal" type="number" inputmode="numeric" value="${st.luteal||14}"></div>
+    <div class="setting-row" style="border:none;padding:4px 0">
+      <span style="flex:1;font-weight:600">顯示排卵／易孕期／經期預測</span>
+      <button class="sw ${st.showPredict!==false?'on':'off'}" data-a="toggleCyclePredict"></button>
+    </div>
+    <div class="modal-btns">
+      <button class="save-btn" data-a="saveCycleSettingsBtn">儲存</button>
+      <button class="outline-btn" data-a="closeModal">取消</button>
+    </div>
   </div></div>`;
 }
 function renderMobileHubBar(){
@@ -390,6 +955,13 @@ function renderModal(){
   if(type==='moduleMenu')return renderModuleMenuModal();
   if(type==='editGoal')return renderEditGoalModal();
   if(type==='editGrat')return renderEditGratModal();
+  if(type==='editHabit')return renderEditHabitModal();
+  if(type==='editProject')return renderEditProjectModal();
+  if(type==='editPhase')return renderEditPhaseModal();
+  if(type==='editTask')return renderEditTaskModal();
+  if(type==='editCycle')return renderEditCycleModal();
+  if(type==='cycleDay')return renderCycleDayModal();
+  if(type==='cycleSettings')return renderCycleSettingsModal();
   return'';
 }
 function renderView(){
@@ -890,8 +1462,14 @@ function renderCalView(opts){
   const gridBlock=`<div class="weekdays">${['日','一','二','三','四','五','六'].map(d=>`<div class="wday">${d}</div>`).join('')}</div>
     <div class="cal-grid">${cells}</div>`;
   if(compact){
-    return`<div class="hdr"><div class="hdr-in" style="min-height:auto;padding:16px 18px">${navBlock}</div></div>
-    <div class="card cal-compact-grid">${gridBlock}</div>`;
+    return`<div class="card cal-compact-grid">
+      <div class="cal-nav">
+        <button class="cal-nb" data-a="cprev">‹</button>
+        <span class="cal-title-text" style="flex:1;text-align:center">${y}年${MONTHS[m]}</span>
+        <button class="cal-nb" data-a="cnext">›</button>
+      </div>
+      <div style="margin-top:10px">${gridBlock}</div>
+    </div>`;
   }
   return`<div class="hdr"><div class="hdr-in">
     ${navBlock}
@@ -1483,7 +2061,7 @@ function renderWsCardsTab(){
     {id:'dream',lbl:'夢想清單'},
     {id:'goals',lbl:'目標設定'},
     {id:'project',lbl:'專案排程'},
-    {id:'todo',lbl:'代辦清單'},
+    {id:'course',lbl:'課程學習'},
   ];
   return`<div class="hdr"><div class="hdr-in">
     <div class="hdr-row">

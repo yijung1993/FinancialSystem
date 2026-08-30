@@ -47,6 +47,11 @@ function relDate(ds){
   const dd=new Date(ds+'T00:00:00');return`${dd.getMonth()+1}/${dd.getDate()}`;
 }
 function offsetDate(off){const d=new Date();d.setDate(d.getDate()+off);return d.toISOString().split('T')[0]}
+// 本地時區安全的日期工具（不經過 UTC 轉換）
+function ymd(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function parseD(ds){return new Date(ds+'T00:00:00')}
+function addDays(ds,n){const d=(ds instanceof Date)?new Date(ds):parseD(ds);d.setDate(d.getDate()+n);return d}
+function daysBetween(a,b){return Math.round((parseD(b)-parseD(a))/86400000)}
 function showToast(msg){
   const old=document.querySelector('.toast');if(old)old.remove();
   const el=document.createElement('div');el.className='toast';el.textContent=msg;
