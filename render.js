@@ -913,7 +913,7 @@ function renderTopBar(){
   const tabs=[{id:'add',img:'home',lbl:'首頁'},{id:'calendar',img:'calendar',lbl:'行事曆'},
     {id:'assets',img:'assets',lbl:'資產'},{id:'stats',img:'stats',lbl:'統計'},
     {id:'settings',img:'settings',lbl:'設定'}];
-  return`<div class="top-bar"><div class="tbi"><div class="top-logo">🏡 記帳本</div>
+  return`<div class="top-bar"><div class="tbi"><div class="top-logo">🏡 工作台</div>
     <nav class="top-nav">${tabs.map(t=>
       `<button class="tnb${state.view===t.id?' active':''}" data-nav="${t.id}" style="opacity:${state.view===t.id?'1':'0.55'}">
         <img src="icons/${t.img}.png" width="22" height="22" style="vertical-align:middle;margin-right:4px">${t.lbl}
@@ -2119,7 +2119,7 @@ function renderThemePickerCards(){
       <div data-a="setFont" data-v="${id}" style="cursor:pointer;padding:14px 16px;border-radius:14px;border:2.5px solid ${sel?'var(--text)':'var(--border)'};background:${sel?'var(--surface)':'var(--bg)'};transition:all .2s;flex:1;display:flex;align-items:center;justify-content:space-between">
         <div style="flex:1;min-width:0">
           <div style="font-size:17px;font-weight:700;color:var(--text);font-family:${f.family}">${f.name}</div>
-          <div style="font-size:13px;color:var(--text2);font-family:${f.family};margin-top:4px">記帳本・支出・收入 Aa 123</div>
+          <div style="font-size:13px;color:var(--text2);font-family:${f.family};margin-top:4px">工作台・支出・收入 Aa 123</div>
         </div>
         <div style="font-size:22px;color:${sel?'var(--text)':'var(--border)'};flex-shrink:0;margin-left:10px">${sel?'✓':'○'}</div>
       </div>

@@ -1,7 +1,7 @@
 {
-  "name": "記帳本",
-  "short_name": "記帳本",
-  "description": "簡單好用的個人記帳工具",
+  "name": "工作台",
+  "short_name": "工作台",
+  "description": "個人工作台：財務、專案、習慣、健康一次管理",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",

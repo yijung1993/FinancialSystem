@@ -205,7 +205,7 @@ async function exportFullBackup(){
     const json=JSON.stringify({version:1,exportedAt:new Date().toISOString(),localStorage:ls,attachments});
     const blob=new Blob([json],{type:'application/json'});
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=`記帳本備份_${todayStr()}.json`;
+    const a=document.createElement('a');a.href=url;a.download=`工作台備份_${todayStr()}.json`;
     document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
     showToast('備份已匯出 ✓');
   }catch(e){showToast('匯出失敗：'+e.message);}
