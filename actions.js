@@ -175,6 +175,7 @@ function saveFixed(){
     accountId:f.fixedAccountId||'',nextDate:f.fixedNext||todayStr(),
     color:f.fixedColor||ACC_COLORS[2],catId:f.fixedCatId||'other_e',
     active:f.fixedActive!==false,
+    autoLog:f.fixedAutoLog!==false,
     bookId:f.fixedBookId||''};
   if(f.fixedId){const i=state.fixedExpenses.findIndex(x=>x.id===f.fixedId);if(i>=0)state.fixedExpenses[i]=obj;}
   else state.fixedExpenses.push(obj);
@@ -185,7 +186,7 @@ const BACKUP_KEYS=['budget_txs','budget_accounts','budget_cats_exp','budget_cats
   'budget_ef','budget_nickname','budget_books','budget_active_book','budget_df',
   'budget_hide_bal','budget_loans','budget_fixed','budget_insurances',
   'budget_ins_members','budget_acc_types','budget_mode','budget_goals','budget_gratitude',
-  'budget_habits','budget_cycles','budget_cycle_logs','budget_cycle_settings','budget_projects'];
+  'budget_habits','budget_cycles','budget_cycle_logs','budget_cycle_settings','budget_projects','budget_income'];
 function bufToB64(buf){
   const u8=new Uint8Array(buf);let s='';
   for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode(...u8.subarray(i,i+8192));
@@ -234,7 +235,7 @@ async function importFullBackup(file){
 function processFixedExpenses(){
   const today=todayStr();let created=0;
   state.fixedExpenses.forEach(f=>{
-    if(f.active===false||!f.nextDate)return;
+    if(f.active===false||f.autoLog===false||!f.nextDate)return;
     let iter=0;
     while(f.nextDate<=today&&iter<36){
       iter++;
