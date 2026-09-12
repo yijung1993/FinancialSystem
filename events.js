@@ -1,13 +1,4 @@
-﻿// ── EVENTS ────────────────────────────────────────────────────────────────
-function saveCardName(id){
-  const inp=document.querySelector(`.cardname-input[data-cardname="${id}"]`);
-  const v=(inp?inp.value:'').trim();
-  state.cardNames=state.cardNames||{};
-  if(v)state.cardNames[id]=v;else delete state.cardNames[id];
-  save('budget_card_names',state.cardNames);
-  state.editingCardName=null;
-  renderApp();
-}
+// ── EVENTS ────────────────────────────────────────────────────────────────
 function attachInputs(){
   const bind=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('input',e=>fn(e.target.value));};
   bind('amt',v=>{state.form.amount=v});
@@ -29,6 +20,16 @@ function attachInputs(){
   bind('df-wish',v=>{state.editForm.wish=v});
   bind('df-target',v=>{state.editForm.target=v});
   bind('ef-subname',v=>{state.editForm.newSubName=v});
+  const planIncome=document.getElementById('plan-income');
+  if(planIncome)planIncome.addEventListener('input',e=>{
+    state.budgetIncome=parseFloat(e.target.value)||0;
+    save('budget_income',state.budgetIncome);
+    const inBook=f=>state.activeBook==='all'||f.bookId===state.activeBook||!f.bookId;
+    const total=state.fixedExpenses.filter(f=>inBook(f)&&f.active!==false).reduce((s,f)=>s+fixedMonthlyEq(f),0);
+    const remain=state.budgetIncome-total;
+    const el2=document.getElementById('plan-remain');
+    if(el2){el2.textContent=(remain<0?'-':'')+'$'+fmt(remain);el2.className=remain>=0?'plan-pos':'plan-neg';}
+  });
   const histAccSel=document.getElementById('hist-acc-sel');
   if(histAccSel)histAccSel.addEventListener('change',e=>{state.histAccFilter=e.target.value;renderApp();});
   const statsSel=document.getElementById('stats-month-sel');
@@ -39,11 +40,6 @@ function attachInputs(){
   const nickInline=document.getElementById('nick-inline');
   if(nickInline)nickInline.addEventListener('blur',e=>{
     const v=(e.target.value||'').trim();if(v!==state.nickname){state.nickname=v;save('budget_nickname',v);}});
-  document.querySelectorAll('.cardname-input').forEach(el=>{
-    el.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){e.preventDefault();saveCardName(el.dataset.cardname);}
-    });
-  });
   bind('ef-subicon',v=>{state.editForm.newSubIcon=v});
   bind('ef-editsubname',v=>{state.editForm.editSubName=v});
   bind('ef-editsubicon',v=>{state.editForm.editSubIcon=v});
@@ -527,9 +523,9 @@ document.addEventListener('click',e=>{
         const el=document.getElementById(id);if(el)state.editForm[keys[i]]=el.value;});
       saveLoan();break;}
     case'loanColor':state.editForm.loanColor=v;dmSel('[data-a="loanColor"]',v);break;
-    case'newFixed':{const defBook=(state.books||[]).find(b=>b.isDefault);state.editForm={fixedFreq:'monthly',fixedColor:ACC_COLORS[2],fixedCatId:'other_e',fixedActive:true,fixedBookId:defBook?.id||state.activeBook||''};state.modal={type:'editFixed'};renderApp();break;}
+    case'newFixed':{const defBook=(state.books||[]).find(b=>b.isDefault);state.editForm={fixedFreq:'monthly',fixedColor:ACC_COLORS[2],fixedCatId:'other_e',fixedActive:true,fixedAutoLog:true,fixedBookId:defBook?.id||state.activeBook||''};state.modal={type:'editFixed'};renderApp();break;}
     case'editFixed':{const x=state.fixedExpenses.find(f=>f.id===v);
-      if(x)state.editForm={fixedId:x.id,fixedName:x.name,fixedIcon:x.icon,fixedAmount:String(x.amount),fixedFreq:x.frequency,fixedAccountId:x.accountId||'',fixedNext:x.nextDate,fixedColor:x.color,fixedCatId:x.catId||'other_e',fixedActive:x.active!==false,fixedBookId:x.bookId||''};
+      if(x)state.editForm={fixedId:x.id,fixedName:x.name,fixedIcon:x.icon,fixedAmount:String(x.amount),fixedFreq:x.frequency,fixedAccountId:x.accountId||'',fixedNext:x.nextDate,fixedColor:x.color,fixedCatId:x.catId||'other_e',fixedActive:x.active!==false,fixedAutoLog:x.autoLog!==false,fixedBookId:x.bookId||''};
       state.modal={type:'editFixed'};renderApp();break;}
     case'delFixed':deleteFixed(v);break;
     case'saveFixedBtn':{
@@ -538,6 +534,7 @@ document.addEventListener('click',e=>{
         const el=document.getElementById(id);if(el)state.editForm[keys[i]]=el.value;});
       saveFixed();break;}
     case'fixedFreq':state.editForm.fixedFreq=v;dmActive('[data-a="fixedFreq"]',v);break;
+    case'fixedAutoLog':state.editForm.fixedAutoLog=(v==='1');dmActive('[data-a="fixedAutoLog"]',v);break;
     case'fixedAcc':state.editForm.fixedAccountId=v;dmActive('[data-a="fixedAcc"]',v);break;
     case'fixedColor':state.editForm.fixedColor=v;dmSel('[data-a="fixedColor"]',v);break;
     case'fixedCatId':state.editForm.fixedCatId=v;dmActive('[data-a="fixedCatId"]',v);break;
@@ -684,14 +681,7 @@ document.addEventListener('click',e=>{
       const inp=document.getElementById('newtask-'+v);
       addGoalTask(v,inp?inp.value:'');break;}
     case'toggleGoalAchieved':toggleGoalAchieved(v);break;
-    case'wsTab':state.wsSettingsTab=v;state.editingCardName=null;renderApp();break;
-    case'editCardName':state.editingCardName=v;renderApp();break;
-    case'saveCardName':saveCardName(v);break;
-    case'resetCardNames':
-      if(!confirm('確定把所有功能名稱還原成預設？'))break;
-      state.cardNames={};save('budget_card_names',state.cardNames);
-      state.editingCardName=null;
-      showToast('已還原預設名稱 ✓');renderApp();break;
+    case'wsTab':state.wsSettingsTab=v;renderApp();break;
     case'toggleHomeCard':{
       const hidden=state.homeHiddenCards||(state.homeHiddenCards=[]);
       const i=hidden.indexOf(v);
@@ -810,4 +800,3 @@ document.addEventListener('click',e=>{
     case'saveCycleSettingsBtn':saveCycleSettings();break;
   }
 });
-
