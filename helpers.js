@@ -52,6 +52,15 @@ function ymd(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0
 function parseD(ds){return new Date(ds+'T00:00:00')}
 function addDays(ds,n){const d=(ds instanceof Date)?new Date(ds):parseD(ds);d.setDate(d.getDate()+n);return d}
 function daysBetween(a,b){return Math.round((parseD(b)-parseD(a))/86400000)}
+// 固定費用換算成「每月」金額：每月=原值；每季/每年先攤成每月，再無條件進位到百位
+function ceilHundred(n){return Math.ceil((n||0)/100)*100}
+function fixedMonthlyEq(f){
+  const amt=f&&f.amount?f.amount:0;
+  if(!amt)return 0;
+  if(f.frequency==='yearly')return ceilHundred(amt/12);
+  if(f.frequency==='quarterly')return ceilHundred(amt/3);
+  return amt; // monthly
+}
 function showToast(msg){
   const old=document.querySelector('.toast');if(old)old.remove();
   const el=document.createElement('div');el.className='toast';el.textContent=msg;
