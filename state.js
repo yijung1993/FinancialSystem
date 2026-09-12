@@ -149,6 +149,7 @@ let state={
   accTypes:load('budget_acc_types',null),
   budgetMode:load('budget_mode','month'),
   homeBudgetPeriod:load('budget_mode','month'),
+  budgetIncome:load('budget_income',0),
   theme:load('budget_theme','pink'),
   fontStyle:load('budget_font','huninn'),
   hiddenFonts:load('budget_hidden_fonts',[]),
@@ -258,6 +259,7 @@ function saveAll(){
   save('budget_ins_members',state.insMembers);
   save('budget_acc_types',state.accTypes);
   save('budget_mode',state.budgetMode);
+  save('budget_income',state.budgetIncome);
   (state.books||[]).filter(b=>b.type==='shared'&&b.roomCode).forEach(book=>{
     const txs=state.txs.filter(t=>t.bookId===book.id).map(({bookId:_bd,...t})=>t);
     _db.collection('rooms').doc(book.roomCode).set({
