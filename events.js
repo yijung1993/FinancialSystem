@@ -1,4 +1,13 @@
 ﻿// ── EVENTS ────────────────────────────────────────────────────────────────
+function saveCardName(id){
+  const inp=document.querySelector(`.cardname-input[data-cardname="${id}"]`);
+  const v=(inp?inp.value:'').trim();
+  state.cardNames=state.cardNames||{};
+  if(v)state.cardNames[id]=v;else delete state.cardNames[id];
+  save('budget_card_names',state.cardNames);
+  state.editingCardName=null;
+  renderApp();
+}
 function attachInputs(){
   const bind=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('input',e=>fn(e.target.value));};
   bind('amt',v=>{state.form.amount=v});
@@ -30,6 +39,11 @@ function attachInputs(){
   const nickInline=document.getElementById('nick-inline');
   if(nickInline)nickInline.addEventListener('blur',e=>{
     const v=(e.target.value||'').trim();if(v!==state.nickname){state.nickname=v;save('budget_nickname',v);}});
+  document.querySelectorAll('.cardname-input').forEach(el=>{
+    el.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();saveCardName(el.dataset.cardname);}
+    });
+  });
   bind('ef-subicon',v=>{state.editForm.newSubIcon=v});
   bind('ef-editsubname',v=>{state.editForm.editSubName=v});
   bind('ef-editsubicon',v=>{state.editForm.editSubIcon=v});
@@ -670,7 +684,14 @@ document.addEventListener('click',e=>{
       const inp=document.getElementById('newtask-'+v);
       addGoalTask(v,inp?inp.value:'');break;}
     case'toggleGoalAchieved':toggleGoalAchieved(v);break;
-    case'wsTab':state.wsSettingsTab=v;renderApp();break;
+    case'wsTab':state.wsSettingsTab=v;state.editingCardName=null;renderApp();break;
+    case'editCardName':state.editingCardName=v;renderApp();break;
+    case'saveCardName':saveCardName(v);break;
+    case'resetCardNames':
+      if(!confirm('確定把所有功能名稱還原成預設？'))break;
+      state.cardNames={};save('budget_card_names',state.cardNames);
+      state.editingCardName=null;
+      showToast('已還原預設名稱 ✓');renderApp();break;
     case'toggleHomeCard':{
       const hidden=state.homeHiddenCards||(state.homeHiddenCards=[]);
       const i=hidden.indexOf(v);
