@@ -1,4 +1,4 @@
-﻿// ── RENDER: FRAMEWORK ──────────────────────────────────────────────────────
+// ── RENDER: FRAMEWORK ──────────────────────────────────────────────────────
 function renderModalOnly(){
   if(!state.modal){renderApp();return;}
   const ov=document.getElementById('modal-overlay');
@@ -54,7 +54,7 @@ function renderModuleBody(){
   if(state.module==='insurance')return`<div class="feature-module">${renderInsView()}</div>`;
   if(state.module==='home')return renderHomeModule();
   if(state.module==='project')return`<div class="feature-module">${renderProjectModule()}</div>`;
-  if(state.module==='course')return`<div class="feature-module">${renderPlaceholderModule('📚',cardName('course'))}</div>`;
+  if(state.module==='course')return`<div class="feature-module">${renderPlaceholderModule('📚','課程學習')}</div>`;
   if(state.module==='goals')return`<div class="feature-module">${renderGoalsModule()}</div>`;
   if(state.module==='habit')return`<div class="feature-module">${renderHabitModule()}</div>`;
   if(state.module==='gratitude')return`<div class="feature-module">${renderGratitudeModule()}</div>`;
@@ -102,7 +102,7 @@ function renderRemindersCard(){
   const cc=creditCardReminders();
   const fx=fixedExpenseReminders();
   if(!cc.length&&!fx.length){
-    return`<div class="card home-feature-card"><div class="hf-title">${escHtml(cardName('reminders'))}</div>
+    return`<div class="card home-feature-card"><div class="hf-title">七天內提醒</div>
       <div class="empty" style="padding:20px 10px"><p>最近沒有待繳款或固定費用</p></div>
     </div>`;
   }
@@ -118,10 +118,10 @@ function renderRemindersCard(){
       <span class="rd-lbl">${escHtml(f.name)}</span>
     </div>`;
   }).join('');
-  return`<div class="card home-feature-card"><div class="hf-title">${escHtml(cardName('reminders'))}</div><div class="hf-scroll">${ccItems}${fxItems}</div></div>`;
+  return`<div class="card home-feature-card"><div class="hf-title">七天內提醒</div><div class="hf-scroll">${ccItems}${fxItems}</div></div>`;
 }
 function renderCourseTeaserCard(){
-  return`<div class="card home-feature-card hf-clickable" data-module="course"><div class="hf-title">${escHtml(cardName('course'))}</div>
+  return`<div class="card home-feature-card hf-clickable" data-module="course"><div class="hf-title">課程學習</div>
     <div class="hf-hint">規劃中，敬請期待</div>
   </div>`;
 }
@@ -133,20 +133,20 @@ function renderGoalListBody(list){
 }
 function renderDreamTeaserCard(){
   const dreams=(state.goals||[]).filter(g=>g.type==='dream');
-  return`<div class="card home-feature-card hf-clickable" data-module="goals"><div class="hf-title">${escHtml(cardName('dream'))}</div>
+  return`<div class="card home-feature-card hf-clickable" data-module="goals"><div class="hf-title">夢想清單</div>
     ${renderGoalListBody(dreams)}
   </div>`;
 }
 function renderGoalsTeaserCard(){
   const goals=(state.goals||[]).filter(g=>g.type==='goal');
-  return`<div class="card home-feature-card hf-clickable" data-module="goals"><div class="hf-title">${escHtml(cardName('goals'))}</div>
+  return`<div class="card home-feature-card hf-clickable" data-module="goals"><div class="hf-title">目標設定</div>
     ${renderGoalListBody(goals)}
   </div>`;
 }
 function renderProjectTeaserCard(){
   const ps=state.projects||[];
   const ico={todo:'○ ',doing:'◐ ',done:'✓ '};
-  return`<div class="card home-feature-card hf-clickable" data-module="project"><div class="hf-title">${escHtml(cardName('project'))}</div>
+  return`<div class="card home-feature-card hf-clickable" data-module="project"><div class="hf-title">專案排程</div>
     ${ps.length?`<div class="hf-scroll">${ps.slice(0,6).map(p=>`<div class="reminder-row">
       <span class="rd-lbl">${ico[p.status||'todo']}${escHtml(p.name)}</span></div>`).join('')}</div>`
       :`<div class="hf-hint">尚未新增專案，點擊開始規劃</div>`}
@@ -163,7 +163,7 @@ function renderProjectModule(){
   if(!sel)sel=list[0]||all[0]||null;
   state.projectSelected=sel?sel.id:null;
   return`<div class="hdr"><div class="hdr-in">
-    <h1>${escHtml(cardName('project'))}</h1>
+    <h1>專案排程</h1>
     <div class="sub">把專案拆成階段與任務，用時間軸掌握進度</div>
   </div></div>
   <div class="content" style="padding-top:12px">
@@ -371,7 +371,7 @@ function renderHomeModule(){
   const rightHtml=tabDefs.filter(t=>t.id!=='reminders').map(t=>t.render()).join('');
   // 手機版（窄螢幕）：合併成頁籤，一次只顯示選中的卡片內容
   const tabBar=tabDefs.length?`<div class="chips home-tab-chips">${tabDefs.map(t=>
-    `<button class="chip${t.id===active?' ac':''}" data-a="homeCardTab" data-v="${t.id}">${escHtml(cardName(t.id))}</button>`
+    `<button class="chip${t.id===active?' ac':''}" data-a="homeCardTab" data-v="${t.id}">${t.lbl}</button>`
   ).join('')}</div>`:'';
   const mobileHtml=`${tabBar}${activeDef?activeDef.render():''}${renderCalView({compact:true})}`;
   return`<div class="content content-fluid">
@@ -387,15 +387,14 @@ function renderHomeModule(){
   </div>`;
 }
 function renderPlaceholderModule(emoji,lbl){
-  const L=escHtml(lbl);
   return`<div class="hdr"><div class="hdr-in">
-    <h1>${L}</h1>
+    <h1>${lbl}</h1>
     <div class="sub">這個模組正在規劃中</div>
   </div></div>
   <div class="content" style="padding-top:12px">
     <div class="empty">
       <div class="ei">${emoji}</div>
-      <p>${L}功能即將推出，敬請期待</p>
+      <p>${lbl}功能即將推出，敬請期待</p>
     </div>
   </div>`;
 }
@@ -406,7 +405,7 @@ function renderGoalsModule(){
   const filtered=filter==='all'?goals:goals.filter(g=>g.type===filter);
   const tabs=[{id:'all',lbl:'全部'},{id:'goal',lbl:'🎯 目標'},{id:'dream',lbl:'🌟 夢想'}];
   return`<div class="hdr"><div class="hdr-in">
-    <h1>${escHtml(cardName('goals'))}</h1>
+    <h1>目標設定</h1>
     <div class="sub">寫下你的目標或夢想，拆解成小任務一步步達成</div>
   </div></div>
   <div class="content" style="padding-top:12px">
@@ -479,7 +478,7 @@ function renderGratitudeModule(){
     .sort((a,b)=>a.date<b.date?-1:1);
   const total=state.gratitude.length;
   return`<div class="hdr"><div class="hdr-in">
-    <h1>${escHtml(cardName('gratitude'))}</h1>
+    <h1>感恩日記</h1>
     <div class="sub">寫下每天值得感恩的小事</div>
   </div></div>
   <div class="content" style="padding-top:12px">
@@ -567,7 +566,7 @@ function renderHabitModule(){
   if(!sel)sel=active[0]||archived[0]||null;
   state.habitSelected=sel?sel.id:null;
   return`<div class="hdr"><div class="hdr-in">
-    <h1>${escHtml(cardName('habit'))}</h1>
+    <h1>習慣養成</h1>
     <div class="sub">每天完成一點，累積成長的軌跡</div>
   </div></div>
   <div class="content" style="padding-top:12px">
@@ -704,7 +703,7 @@ function renderCycleModule(){
   const s=cycleStats();
   const{y,m}=state.cycleMonth;
   return`<div class="hdr"><div class="hdr-in">
-    <h1>${escHtml(cardName('cycle'))}</h1>
+    <h1>月經週期</h1>
     <div class="sub">記錄經期，預測下次來潮與易孕期</div>
   </div></div>
   <div class="content" style="padding-top:12px">
@@ -880,7 +879,7 @@ function renderMobileHubBar(){
   const cur=MODULES.find(t=>isModuleActive(t));
   return`<div class="hub-bar">
     <button class="hub-btn-inline" data-a="moduleMenu">☰</button>
-    <span class="hub-bar-title">${cur?escHtml(cardName(cur.id)):''}</span>
+    <span class="hub-bar-title">${cur?cur.lbl:''}</span>
   </div>`;
 }
 function renderModuleMenuModal(){
@@ -889,7 +888,7 @@ function renderModuleMenuModal(){
     <div class="modal-title">切換功能</div>
     <div class="book-picker-list">${getOrderedModules().map(t=>
       `<div class="book-picker-item${isModuleActive(t)?' active':''}" data-mod-id="${t.id}" data-module="${t.module}"${t.view?` data-view="${t.view}"`:''}${t.settingsTab?` data-settings-tab="${t.settingsTab}"`:''}>
-        <div class="book-picker-info"><div class="book-picker-name">${escHtml(cardName(t.id))}</div></div>
+        <div class="book-picker-info"><div class="book-picker-name">${t.lbl}</div></div>
         ${isModuleActive(t)?'<span style="color:var(--p);font-size:20px">✓</span>':''}
         <span class="drag-handle" title="拖曳排序">⠿</span>
       </div>`
@@ -904,7 +903,7 @@ function renderSidebar(){
     </div>
     <nav class="snb">${getOrderedModules().map(t=>
       `<button class="snb-btn${isModuleActive(t)?' active':''}" data-mod-id="${t.id}" data-module="${t.module}"${t.view?` data-view="${t.view}"`:''}${t.settingsTab?` data-settings-tab="${t.settingsTab}"`:''}>
-        <span class="snb-lbl">${escHtml(cardName(t.id))}</span>
+        <span class="snb-lbl">${t.lbl}</span>
         <span class="drag-handle" title="拖曳排序">⠿</span>
       </button>`
     ).join('')}</nav>
@@ -1124,6 +1123,49 @@ function renderHomeView(){
     })()}
     <div class="add-layout" style="margin-bottom:12px">${efCard}${dfCard}</div>
     <button class="save-btn" data-a="openAdd" style="margin-bottom:12px">📝 記一筆</button>
+    ${(()=>{
+      const inBook=f=>state.activeBook==='all'||f.bookId===state.activeBook||!f.bookId;
+      const fxs=state.fixedExpenses.filter(inBook);
+      const income=state.budgetIncome||0;
+      const monthlyTotal=fxs.filter(f=>f.active!==false).reduce((s,f)=>s+fixedMonthlyEq(f),0);
+      const remain=income-monthlyTotal;
+      const freqLabel={monthly:'每月',quarterly:'每季',yearly:'每年'};
+      const rows=fxs.map(f=>{
+        const eq=fixedMonthlyEq(f);
+        const paused=f.active===false;
+        const planOnly=f.autoLog===false;
+        const isConv=f.frequency&&f.frequency!=='monthly';
+        return`<div class="plan-row${paused?' paused':''}" data-a="editFixed" data-v="${f.id}">
+          <span class="plan-ico">${f.icon||'📋'}</span>
+          <span class="plan-name">${escHtml(f.name)}</span>
+          <span class="plan-tags">
+            <span class="plan-tag">${freqLabel[f.frequency]||'每月'}</span>
+            ${planOnly?'<span class="plan-tag plan-tag-plan">只列預算</span>':''}
+            ${paused?'<span class="plan-tag">暫停</span>':''}
+          </span>
+          <span class="plan-amt">
+            <span class="plan-eq">$${fmt(eq)}<span class="plan-eq-unit">/月</span></span>
+            ${isConv?`<span class="plan-orig">${freqLabel[f.frequency]} $${fmt(f.amount)}</span>`:''}
+          </span>
+        </div>`;
+      }).join('');
+      return`<div class="card plan-card" style="margin-bottom:12px">
+        <div class="plan-hd"><span class="plan-title">🧮 本月預算規劃</span></div>
+        <div class="plan-income">
+          <label>本月收入</label>
+          <div class="plan-income-in"><span>$</span><input id="plan-income" type="number" inputmode="decimal" placeholder="0" value="${income||''}"></div>
+        </div>
+        <div class="plan-list">
+          ${rows||`<div class="empty" style="padding:14px 0"><p style="font-size:13px">尚未新增固定花費，點下方新增</p></div>`}
+        </div>
+        <button class="add-fab" data-a="newFixed" style="margin:4px 0 12px">＋ 新增固定花費</button>
+        <div class="plan-sum">
+          <div class="plan-sum-row"><span>每月固定支出合計</span><b class="plan-neg">-$${fmt(monthlyTotal)}</b></div>
+          <div class="plan-sum-row plan-sum-total"><span>剩餘可支配</span><b id="plan-remain" class="${remain>=0?'plan-pos':'plan-neg'}">${remain<0?'-':''}$${fmt(remain)}</b></div>
+          <div class="plan-hint">💡 每年費用已自動 ÷12 進位到百位換算成每月；「只列預算」的項目算進合計但不會自動記帳。</div>
+        </div>
+      </div>`;
+    })()}
     ${(()=>{
       const bm=state.budgetMode||'month';
       const bp=state.homeBudgetPeriod||bm;
@@ -1848,10 +1890,7 @@ function renderSettingsView(){
 
   if(state.settingsTab==='fixed'){
     const freqLabel={monthly:'每月',quarterly:'每季',yearly:'每年'};
-    const monthlyEq=state.fixedExpenses.reduce((s,f)=>{
-      if(f.frequency==='monthly')return s+f.amount;
-      if(f.frequency==='quarterly')return s+f.amount/3;
-      if(f.frequency==='yearly')return s+f.amount/12;return s;},0);
+    const monthlyEq=state.fixedExpenses.filter(f=>f.active!==false).reduce((s,f)=>s+fixedMonthlyEq(f),0);
     const activeBooks=(state.books||[]).filter(b=>!b.isArchived);
     const multiBook=activeBooks.length>1;
     function fixedRow(f){
@@ -1859,7 +1898,7 @@ function renderSettingsView(){
       return`<div class="setting-row" style="${f.active===false?'opacity:.5':''}">
         <div class="setting-ico" style="background:var(--bg);border:1px solid var(--border)">${f.icon}</div>
         <div class="setting-info"><div class="setting-name">${escHtml(f.name)}${f.active===false?` <span style="font-size:11px;color:var(--text2);font-weight:600">暫停中</span>`:''}</div>
-          <div class="setting-sub">${freqLabel[f.frequency]||'每月'} · $${fmt(f.amount)}${f.nextDate?' · 下次 '+f.nextDate.slice(5):''}${f.accountId&&acc.name?' · '+escHtml(acc.icon)+escHtml(acc.name):''}</div></div>
+          <div class="setting-sub">${freqLabel[f.frequency]||'每月'} · $${fmt(f.amount)}${f.frequency&&f.frequency!=='monthly'?' (≈$'+fmt(fixedMonthlyEq(f))+'/月)':''}${f.autoLog===false?' · 📊只列預算':''}${f.nextDate&&f.autoLog!==false?' · 下次 '+f.nextDate.slice(5):''}${f.accountId&&acc.name?' · '+escHtml(acc.icon)+escHtml(acc.name):''}</div></div>
         <div style="display:flex;align-items:center;gap:6px">
           <button class="sw ${f.active===false?'off':'on'}" data-a="toggleFixed" data-v="${f.id}"></button>
           <button class="icon-btn edit" data-a="editFixed" data-v="${f.id}">···</button>
@@ -2043,7 +2082,7 @@ function renderWorkspaceSettingsModule(){
   ];
   return`<div class="content">
     <div class="dash-greet">
-      <h1>${escHtml(cardName('settings'))}</h1>
+      <h1>設定</h1>
       <div class="dash-date">管理首頁顯示內容與主題風格</div>
     </div>
     <div class="card">
@@ -2057,18 +2096,13 @@ function renderWorkspaceSettingsModule(){
 }
 function renderWsCardsTab(){
   const hidden=state.homeHiddenCards||[];
-  const names=state.cardNames||{};
-  const homeCards=['reminders','dream','goals','project','course'];
-  const modules=['finance','insurance','habit','gratitude','cycle','home','settings'];
-  const hasCustom=Object.keys(names).some(k=>names[k]&&String(names[k]).trim());
-  const editing=state.editingCardName||null;
-  const nameField=id=>{
-    if(editing===id)return`<input class="form-input cardname-input" data-cardname="${id}" type="text" value="${escHtml(names[id]||'')}" placeholder="${escHtml(CARD_DEFAULTS[id]||id)}" autofocus>`;
-    return`<div class="cardname-val">${escHtml(names[id]||CARD_DEFAULTS[id]||id)}</div>`;
-  };
-  const editBtn=id=>editing===id
-    ?`<button class="chip ac" data-a="saveCardName" data-v="${id}">儲存</button>`
-    :`<button class="chip" data-a="editCardName" data-v="${id}">✏️ 編輯</button>`;
+  const homeCards=[
+    {id:'reminders',lbl:'七天內提醒'},
+    {id:'dream',lbl:'夢想清單'},
+    {id:'goals',lbl:'目標設定'},
+    {id:'project',lbl:'專案排程'},
+    {id:'course',lbl:'課程學習'},
+  ];
   return`<div class="hdr"><div class="hdr-in">
     <div class="hdr-row">
       <div><h1>卡片顯示</h1></div>
@@ -2077,33 +2111,15 @@ function renderWsCardsTab(){
   </div></div>
   <div class="content" style="padding-top:12px">
     <div class="card">
-      <div class="card-title" style="margin-bottom:4px">首頁卡片</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">按編輯可更改名稱，留空＝用預設。改名會同步到側邊選單、首頁卡片、以及該功能頁面最上方的標題。</div>
-      ${homeCards.map(id=>{
-        const shown=!hidden.includes(id);
-        return`<div class="cardname-row">
-          <div class="cardname-main">
-            <div class="cardname-def">預設：${escHtml(CARD_DEFAULTS[id]||id)}</div>
-            ${nameField(id)}
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            ${editBtn(id)}
-            <button class="chip${shown?' ac':''}" data-a="toggleHomeCard" data-v="${id}">${shown?'✓ 顯示中':'已隱藏'}</button>
-          </div>
+      <div class="card-title" style="margin-bottom:6px">首頁顯示項目</div>
+      ${homeCards.map(c=>{
+        const shown=!hidden.includes(c.id);
+        return`<div class="setting-row">
+          <div class="setting-info"><div class="setting-name">${c.lbl}</div></div>
+          <button class="chip${shown?' ac':''}" data-a="toggleHomeCard" data-v="${c.id}">${shown?'✓ 顯示中':'已隱藏'}</button>
         </div>`;
       }).join('')}
     </div>
-    <div class="card">
-      <div class="card-title" style="margin-bottom:6px">其他功能名稱</div>
-      ${modules.map(id=>`<div class="cardname-row">
-        <div class="cardname-main">
-          <div class="cardname-def">預設：${escHtml(CARD_DEFAULTS[id]||id)}</div>
-          ${nameField(id)}
-        </div>
-        ${editBtn(id)}
-      </div>`).join('')}
-    </div>
-    ${hasCustom?`<button class="outline-btn" style="width:100%;color:var(--expense);border-color:var(--expense)" data-a="resetCardNames">🔄 全部名稱還原預設</button>`:''}
   </div>`;
 }
 function renderWsThemeTab(){
@@ -2635,6 +2651,11 @@ function renderEditFixedModal(){
     <div class="type-chips" style="margin-bottom:14px">
       ${freqs.map(fr=>`<button class="type-chip${(f.fixedFreq||'monthly')===fr.id?' active':''}" data-a="fixedFreq" data-v="${fr.id}">${fr.lbl}</button>`).join('')}
     </div>
+    <div class="slabel">到期自動記帳</div>
+    <div class="type-chips" style="margin-bottom:14px">
+      <button class="type-chip${f.fixedAutoLog!==false?' active':''}" data-a="fixedAutoLog" data-v="1">✅ 自動記一筆</button>
+      <button class="type-chip${f.fixedAutoLog===false?' active':''}" data-a="fixedAutoLog" data-v="0">📊 只列預算</button>
+    </div>
     <div class="slabel">費用類別（自動記帳時套用）</div>
     <div class="acc-row" style="margin-bottom:14px;flex-wrap:wrap">
       ${state.cats.expense.map(c=>`<button class="acc-pill${(f.fixedCatId||'other_e')===c.id?' active':''}" style="--acc-c:var(--p)" data-a="fixedCatId" data-v="${c.id}">${c.icon} ${escHtml(c.name)}</button>`).join('')}
@@ -2840,7 +2861,7 @@ function renderInsView(){
   const hdr=`<div class="hdr ins-hdr">
     <div class="hdr-in">
       <div class="hdr-row">
-        <div><h1>${escHtml(cardName('insurance'))}</h1>
+        <div><h1>保險管理</h1>
         <div class="sub">共 ${state.insurances.length} 張保單・${active} 張生效中</div></div>
         <button class="outline-btn" style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.5);color:white;font-size:13px;flex-shrink:0" data-a="importIns">📥 匯入 Excel</button>
       </div>
@@ -3048,4 +3069,3 @@ function drawDonut(canvasId='donut',y,m){
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(wp+'%',cx,cy-8);
   ctx.font='11px Nunito,sans-serif';ctx.fillStyle='#907878';ctx.fillText('想要',cx,cy+10);
 }
-
